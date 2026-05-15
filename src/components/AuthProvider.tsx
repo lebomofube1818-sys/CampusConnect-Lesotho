@@ -5,11 +5,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { setUser, setLoading } = useAuthStore();
 
   useEffect(() => {
-    // Mock user for UI presentation if desired, or skip
-    // setUser({ email: 'student@lesotho.edu.ls', displayName: 'Student User' } as any);
-    setUser(null);
-    setLoading(false);
-  }, [setUser, setLoading]);
+    // Artificial delay to show the modern loading animation
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [setLoading]);
 
   return <>{children}</>;
 };
