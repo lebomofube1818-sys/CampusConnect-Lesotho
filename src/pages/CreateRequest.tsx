@@ -3,7 +3,6 @@ import { motion } from 'motion/react';
 import { 
   ShoppingBag, 
   Tag, 
-  DollarSign, 
   AlertCircle, 
   ArrowRight, 
   CheckCircle2,
@@ -134,17 +133,17 @@ const CreateRequest: React.FC = () => {
 
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-slate-400 ml-1">
-                  <DollarSign size={14} className="text-brand-primary" /> Budget (M)
+                  <span className="flex h-5 w-5 items-center justify-center rounded-lg bg-green-50 text-[10px] font-black text-brand-primary ring-1 ring-green-100">M</span> Budget
                 </label>
-                <div className="relative">
+                <div className="relative flex items-center">
+                  <span className="absolute left-6 text-base font-black text-brand-primary">M</span>
                   <input 
                     type="number"
-                    placeholder="Approximate budget"
+                    placeholder="0.00"
                     value={budget}
                     onChange={(e) => setBudget(e.target.value)}
-                    className="w-full rounded-2xl bg-slate-50 py-4 px-6 text-base font-bold text-slate-900 border-2 border-transparent transition-all focus:border-brand-primary focus:bg-white focus:outline-none"
+                    className="w-full rounded-2xl bg-slate-50 py-4 pl-12 pr-6 text-base font-bold text-slate-900 border-2 border-transparent transition-all focus:border-brand-primary focus:bg-white focus:outline-none"
                   />
-                  <span className="absolute right-6 top-1/2 -translate-y-1/2 text-xs font-black text-slate-300">Maloti</span>
                 </div>
               </div>
             </div>

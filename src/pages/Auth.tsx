@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShoppingBag, Mail, Lock, UserCircle, Store, ArrowRight, Sparkles, Zap, ShieldCheck, Phone, Check } from 'lucide-react';
+import { ShoppingBag, Mail, Lock, UserCircle, Store, ArrowRight, Sparkles, Zap, ShieldCheck, Phone, Check, GraduationCap } from 'lucide-react';
 import { auth, db } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
 
@@ -35,6 +35,7 @@ const Auth: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [countryCode, setCountryCode] = useState('+266');
   const [phone, setPhone] = useState('');
+  const [school, setSchool] = useState('');
   
   const [agreed, setAgreed] = useState(false);
   const [displayName, setDisplayName] = useState('');
@@ -64,7 +65,7 @@ const Auth: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-brand-primary via-emerald-600 to-brand-secondary px-4 py-12 font-sans overflow-hidden">
+    <div className="flex min-h-screen flex-col items-center justify-start bg-gradient-to-br from-brand-primary via-emerald-600 to-brand-secondary px-4 pt-24 pb-12 sm:pt-40 font-sans overflow-hidden">
       {/* Dynamic Background Elements */}
       <div className="fixed -top-24 -left-24 h-96 w-96 rounded-full bg-white/10 blur-3xl animate-pulse"></div>
       <div className="fixed -bottom-24 -right-24 h-96 w-96 rounded-full bg-black/10 blur-3xl animate-pulse"></div>
@@ -73,17 +74,38 @@ const Auth: React.FC = () => {
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-8 text-center"
+        className="mb-8 flex flex-col items-center text-center"
       >
-        <div className="mx-auto mb-4">
-          <div className="flex h-20 w-20 items-center justify-center rounded-[2rem] bg-white shadow-2xl ring-4 ring-white/20">
-             <div className="flex items-center justify-center text-3xl font-black text-brand-primary tracking-tighter">CC</div>
-          </div>
+        <div className="mb-10 flex justify-center" style={{ perspective: 1000 }}>
+          <motion.div
+            animate={{ 
+              y: [0, -15, 0],
+              rotateY: [0, 20, 0, -20, 0],
+              rotateX: [0, -10, 0, 10, 0]
+            }}
+            transition={{ 
+              duration: 5, 
+              repeat: Infinity, 
+              ease: "easeInOut" 
+            }}
+            whileHover={{ 
+              scale: 1.2, 
+              rotateY: 30,
+              transition: { duration: 0.3 }
+            }}
+            className="relative flex items-center justify-center"
+          >
+            <img 
+              src="/logo.png" 
+              alt="Campus Connect" 
+              className="h-48 w-48 object-contain drop-shadow-[0_40px_80px_rgba(34,197,94,0.5)] sm:h-72 sm:w-72"
+            />
+          </motion.div>
         </div>
-        <h1 className="text-3xl font-black tracking-tight text-white drop-shadow-md">
+        <h1 className="text-3xl font-black tracking-tight text-white drop-shadow-md sm:text-4xl">
           CampusConnect
         </h1>
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-50 opacity-90">Lesotho • Student Marketplace</p>
+        <p className="mt-1 text-[11px] font-black uppercase tracking-[0.4em] text-emerald-50 opacity-90">Lesotho • Student Marketplace</p>
       </motion.div>
 
       <motion.div 
@@ -186,6 +208,38 @@ const Auth: React.FC = () => {
                       </button>
                     </div>
                   </div>
+
+                  <AnimatePresence mode="wait">
+                    {role === 'student' && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="space-y-5 overflow-hidden"
+                      >
+                        <div className="space-y-2 pt-2">
+                          <label className="text-xs font-black uppercase tracking-wider text-slate-400 ml-1">Your School / University</label>
+                          <div className="relative group">
+                            <GraduationCap className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-brand-primary" size={20} />
+                            <select 
+                              required
+                              value={school}
+                              onChange={(e) => setSchool(e.target.value)}
+                              className="w-full rounded-2xl bg-slate-50 py-4 pl-12 pr-4 text-sm font-semibold appearance-none border-2 border-transparent transition-all focus:border-brand-primary focus:bg-white focus:outline-none focus:ring-0 cursor-pointer"
+                            >
+                              <option value="" disabled>Select your institution</option>
+                              <option value="NUL">National University of Lesotho (NUL)</option>
+                              <option value="LUCT">Limkokwing University (LUCT)</option>
+                              <option value="LCE">Lesotho College of Education (LCE)</option>
+                              <option value="Lerotholi">Lerotholi Polytechnic</option>
+                              <option value="CAS">Centre for Accounting Studies (CAS)</option>
+                              <option value="Other">Other Institute</option>
+                            </select>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -206,7 +260,7 @@ const Auth: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-wider text-slate-400 ml-1">Secret Password</label>
+              <label className="text-xs font-black uppercase tracking-wider text-slate-400 ml-1">Create Password</label>
               <div className="relative group">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-brand-primary" size={20} />
                 <input 
