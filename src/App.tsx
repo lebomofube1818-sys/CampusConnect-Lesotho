@@ -4,6 +4,8 @@ import { AuthProvider } from './components/AuthProvider';
 import Navbar from './components/layout/Navbar';
 import Home from './pages/Home';
 import Categories from './pages/Categories';
+import Students from './pages/Students';
+import Requests from './pages/Requests';
 import Auth from './pages/Auth';
 import CreateRequest from './pages/CreateRequest';
 import { useAuthStore } from './store/authStore';
@@ -30,6 +32,8 @@ export default function App() {
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/categories" element={<Categories />} />
+                  <Route path="/students" element={<Students />} />
+                  <Route path="/requests" element={<Requests />} />
                   <Route path="/login" element={<Auth />} />
                   <Route path="/register" element={<Auth />} />
                   <Route path="/create-request" element={<CreateRequest />} />

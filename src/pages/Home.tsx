@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, ArrowRight, Lock, ShieldCheck, MapPin, X, Shield, Users, CreditCard } from 'lucide-react';
+import { Sparkles, ArrowRight, Lock, ShieldCheck, MapPin, X, Shield, Users, CreditCard, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const FEATURES = [
@@ -259,8 +259,11 @@ const Home: React.FC = () => {
             viewport={{ once: true }}
             className="flex flex-wrap gap-4"
           >
-            <Link to="/create-request" className="group flex items-center gap-3 rounded-2xl bg-emerald-50 px-8 py-4 text-sm font-black text-brand-primary transition-all hover:bg-white hover:shadow-2xl hover:shadow-emerald-100 active:scale-95">
-              Can't find it? Post Request <Sparkles size={18} className="text-emerald-400 group-hover:rotate-12 transition-transform" />
+            <Link to="/create-request" className="group flex items-center gap-3 overflow-hidden rounded-2xl bg-slate-900 px-8 py-5 text-sm font-black text-white transition-all hover:bg-brand-primary hover:shadow-[0_20px_40px_-10px_rgba(34,197,94,0.3)] active:scale-95">
+              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-white/10 text-white transition-colors group-hover:bg-white group-hover:text-brand-primary">
+                <Plus size={16} strokeWidth={3} />
+              </div>
+              <span className="tracking-tight">Post Your Request</span>
             </Link>
           </motion.div>
         </div>

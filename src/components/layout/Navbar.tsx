@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Search, User as UserIcon, Menu, X, ChevronRight } from 'lucide-react';
+import { ShoppingBag, Search, User as UserIcon, Menu, X, ChevronRight, Users, Tag } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -21,6 +21,8 @@ const Navbar: React.FC = () => {
   const navLinks = [
     { name: 'Marketplace', path: '/' },
     { name: 'Categories', path: '/categories' },
+    { name: 'Students', path: '/students' },
+    { name: 'Student Needs', path: '/requests' },
     { name: 'Post Request', path: '/create-request' },
   ];
 
@@ -104,9 +106,12 @@ const Navbar: React.FC = () => {
             ) : (
               <Link 
                 to="/login"
-                className="inline-flex items-center justify-center rounded-full bg-brand-primary px-4 py-2 text-xs font-bold text-white shadow-lg shadow-green-100 transition-all hover:bg-green-600 hover:shadow-xl active:scale-95 sm:px-6 sm:py-2.5 sm:text-sm"
+                className="group flex items-center gap-1.5 rounded-full bg-brand-primary px-3.5 py-1.5 text-[10px] font-black text-white shadow-lg shadow-green-100 transition-all hover:bg-green-600 hover:-translate-y-0.5 active:scale-95 sm:gap-2 sm:px-5 sm:py-2 sm:text-xs"
               >
-                Sign In
+                <div className="hidden h-4 w-4 items-center justify-center rounded-full bg-white/20 text-white transition-colors group-hover:bg-white group-hover:text-brand-primary sm:flex sm:h-5 sm:w-5">
+                  <UserIcon size={10} className="sm:size-[12px]" />
+                </div>
+                <span>Sign In</span>
               </Link>
             )}
             
@@ -166,6 +171,8 @@ const Navbar: React.FC = () => {
                             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-50 text-brand-primary">
                               {link.name === 'Marketplace' && <Search size={18} />}
                               {link.name === 'Categories' && <Menu size={18} />}
+                              {link.name === 'Students' && <Users size={18} />}
+                              {link.name === 'Student Needs' && <Tag size={18} />}
                               {link.name === 'Post Request' && <ShoppingBag size={18} />}
                             </div>
                             {link.name}
