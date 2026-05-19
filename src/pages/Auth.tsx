@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ShoppingBag, Mail, Lock, UserCircle, Store, ArrowRight, Sparkles, Zap, ShieldCheck, Phone, Check, GraduationCap } from 'lucide-react';
 import { auth, db } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
 
 const countryCodes = [
   { code: '+266', name: 'LS', flag: '🇱🇸' },
@@ -42,6 +43,8 @@ const Auth: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
+  const [showSuccess, setShowSuccess] = useState(false);
+  
   const navigate = useNavigate();
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -49,24 +52,96 @@ const Auth: React.FC = () => {
     setLoading(true);
     setError('');
 
-    // Mock delay
-    setTimeout(() => {
+    // Mock verification for passwords
+    if (mode === 'register' && password !== confirmPassword) {
+      setError('Passwords do not match');
       setLoading(false);
-      navigate('/');
-    }, 1000);
+      return;
+    }
+
+    if (mode === 'register' && !agreed) {
+      setError('Please agree to terms');
+      setLoading(false);
+      return;
+    }
+
+    // Mock success
+    setTimeout(() => {
+      const mockUser = {
+        uid: 'demo-' + Math.random().toString(36).substr(2, 9),
+        email: email,
+        displayName: displayName || (email.split('@')[0]),
+        photoURL: null,
+        role: role
+      };
+      
+      useAuthStore.getState().setUser(mockUser as any);
+      setLoading(false);
+      setShowSuccess(true);
+      
+      // Delay redirect to show success message
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1500);
+    }, 1200);
   };
 
   const signInWithGoogle = () => {
     setLoading(true);
     setTimeout(() => {
+      const mockUser = {
+        uid: 'demo-google',
+        email: 'student@google.com',
+        displayName: 'Google Student',
+        photoURL: 'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
+        role: 'student'
+      };
+      useAuthStore.getState().setUser(mockUser as any);
       setLoading(false);
-      navigate('/');
-    }, 800);
+      setShowSuccess(true);
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1500);
+    }, 1000);
   };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-start bg-gradient-to-br from-brand-primary via-emerald-600 to-brand-secondary px-4 pt-24 pb-12 sm:pt-40 font-sans overflow-hidden">
-      {/* Dynamic Background Elements */}
+      {/* Success Modal */}
+      <AnimatePresence>
+        {showSuccess && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="w-full max-w-sm rounded-[3rem] bg-white p-10 text-center shadow-2xl"
+            >
+              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-brand-primary">
+                <Check size={40} strokeWidth={3} />
+              </div>
+              <h2 className="text-3xl font-black text-slate-900">Success!</h2>
+              <p className="mt-4 font-bold text-slate-500">
+                {mode === 'login' ? 'Welcome back! Redirecting to your dashboard...' : 'Your account has been created successfully! Redirecting...'}
+              </p>
+              <div className="mt-8 flex justify-center">
+                <div className="h-1.5 w-32 overflow-hidden rounded-full bg-slate-100">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: 1.5 }}
+                    className="h-full bg-brand-primary"
+                  />
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>      {/* Dynamic Background Elements */}
       <div className="fixed -top-24 -left-24 h-96 w-96 rounded-full bg-white/10 blur-3xl animate-pulse"></div>
       <div className="fixed -bottom-24 -right-24 h-96 w-96 rounded-full bg-black/10 blur-3xl animate-pulse"></div>
 
@@ -233,7 +308,7 @@ const Auth: React.FC = () => {
                               <option value="LCE">Lesotho College of Education (LCE)</option>
                               <option value="Lerotholi">Lerotholi Polytechnic</option>
                               <option value="CAS">Centre for Accounting Studies (CAS)</option>
-                              <option value="Other">Other Institute</option>
+                              <option value="Other">Other</option>
                             </select>
                           </div>
                         </div>
@@ -260,7 +335,7 @@ const Auth: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-wider text-slate-400 ml-1">Create Password</label>
+              <label className="text-xs font-black uppercase tracking-wider text-slate-400 ml-1">Secret Password</label>
               <div className="relative group">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-brand-primary" size={20} />
                 <input 

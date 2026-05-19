@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, ArrowRight, Lock, ShieldCheck, MapPin, X, Shield, Users, CreditCard, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
 
 const FEATURES = [
   {
@@ -49,6 +50,7 @@ const FEATURES = [
 ];
 
 const Home: React.FC = () => {
+  const { user } = useAuthStore();
   const [selectedFeature, setSelectedFeature] = useState<typeof FEATURES[0] | null>(null);
 
   return (
@@ -79,6 +81,7 @@ const Home: React.FC = () => {
                     setSelectedFeature(null);
                   }}
                   className="absolute right-6 top-6 z-50 rounded-full bg-slate-100 p-2.5 text-slate-500 transition-all hover:bg-slate-200 hover:text-slate-900 active:scale-90"
+                  style={{ transform: 'translateZ(60px)' }}
                 >
                   <X size={20} />
                 </button>
@@ -145,22 +148,35 @@ const Home: React.FC = () => {
               Get ready for the new semester. The premier marketplace for Roma & Maseru students with instant search and secure transactions.
             </p>
             <div className="flex flex-wrap gap-4">
-              <Link 
-                to="/register" 
-                className="group relative flex items-center justify-center overflow-hidden rounded-full bg-white px-8 py-4 text-sm font-black text-brand-secondary shadow-xl shadow-green-900/20 transition-all hover:scale-105 active:scale-95"
-              >
-                <span className="relative z-10 flex items-center gap-2">
-                  Create Account <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
-                </span>
-                <div className="absolute inset-0 z-0 bg-linear-to-r from-green-50 to-white opacity-0 transition-opacity group-hover:opacity-100" />
-              </Link>
-              
-              <Link 
-                to="/login" 
-                className="flex items-center justify-center rounded-full border-2 border-white/30 bg-white/5 backdrop-blur-md px-8 py-4 text-sm font-black text-white transition-all hover:bg-white/20 hover:border-white/50 active:scale-95"
-              >
-                Login to Profile
-              </Link>
+              {!user ? (
+                <>
+                  <Link 
+                    to="/register" 
+                    className="group relative flex items-center justify-center overflow-hidden rounded-full bg-white px-8 py-4 text-sm font-black text-brand-secondary shadow-xl shadow-green-900/20 transition-all hover:scale-105 active:scale-95"
+                  >
+                    <span className="relative z-10 flex items-center gap-2">
+                      Create Account <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
+                    </span>
+                    <div className="absolute inset-0 z-0 bg-linear-to-r from-green-50 to-white opacity-0 transition-opacity group-hover:opacity-100" />
+                  </Link>
+                  
+                  <Link 
+                    to="/login" 
+                    className="flex items-center justify-center rounded-full border-2 border-white/30 bg-white/5 backdrop-blur-md px-8 py-4 text-sm font-black text-white transition-all hover:bg-white/20 hover:border-white/50 active:scale-95"
+                  >
+                    Login to Profile
+                  </Link>
+                </>
+              ) : (
+                <Link 
+                  to="/dashboard" 
+                  className="group relative flex items-center justify-center overflow-hidden rounded-full bg-white px-10 py-5 text-sm font-black text-brand-secondary shadow-xl shadow-green-900/20 transition-all hover:scale-105 active:scale-95"
+                >
+                  <span className="relative z-10 flex items-center gap-2">
+                    Enter Dashboard <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
+                  </span>
+                </Link>
+              )}
             </div>
           </motion.div>
         </div>
@@ -235,7 +251,7 @@ const Home: React.FC = () => {
 
 
       {/* Categories Grid */}
-      <section className="py-24 lg:py-32">
+      <section id="categories-section" className="py-24 lg:py-32">
         <div className="mb-16 flex flex-col items-center justify-between gap-8 md:flex-row md:items-end">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -259,7 +275,7 @@ const Home: React.FC = () => {
             viewport={{ once: true }}
             className="flex flex-wrap gap-4"
           >
-            <Link to="/create-request" className="group flex items-center gap-3 overflow-hidden rounded-2xl bg-slate-900 px-8 py-5 text-sm font-black text-white transition-all hover:bg-brand-primary hover:shadow-[0_20px_40px_-10px_rgba(34,197,94,0.3)] active:scale-95">
+            <Link to={user ? "/create-request" : "/login"} className="group flex items-center gap-3 overflow-hidden rounded-2xl bg-slate-900 px-8 py-5 text-sm font-black text-white transition-all hover:bg-brand-primary hover:shadow-[0_20px_40px_-10px_rgba(34,197,94,0.3)] active:scale-95">
               <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-white/10 text-white transition-colors group-hover:bg-white group-hover:text-brand-primary">
                 <Plus size={16} strokeWidth={3} />
               </div>
@@ -299,7 +315,7 @@ const Home: React.FC = () => {
               }}
             >
               <Link 
-                to={cat.name === 'Explore All' ? '/categories' : `/search?category=${cat.name.toLowerCase()}`}
+                to="/categories"
                 className={`group relative flex flex-col justify-between overflow-hidden rounded-[2.5rem] border-2 ${cat.border} ${cat.color} aspect-square p-8 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-slate-200`}
               >
                 <div className="relative z-10">

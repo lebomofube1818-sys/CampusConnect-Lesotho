@@ -8,8 +8,10 @@ import Students from './pages/Students';
 import Requests from './pages/Requests';
 import Auth from './pages/Auth';
 import CreateRequest from './pages/CreateRequest';
+import StudentDashboard from './pages/StudentDashboard';
 import { useAuthStore } from './store/authStore';
 import LoadingScreen from './components/ui/LoadingScreen';
+import FavoritesSheet from './components/ui/FavoritesSheet';
 
 export default function App() {
   const { loading } = useAuthStore();
@@ -36,9 +38,11 @@ export default function App() {
                   <Route path="/requests" element={<Requests />} />
                   <Route path="/login" element={<Auth />} />
                   <Route path="/register" element={<Auth />} />
+                  <Route path="/dashboard" element={<StudentDashboard />} />
                   <Route path="/create-request" element={<CreateRequest />} />
                 </Routes>
               </main>
+              <FavoritesSheet />
             </motion.div>
           )}
         </AnimatePresence>

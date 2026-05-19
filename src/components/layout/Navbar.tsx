@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Search, User as UserIcon, Menu, X, ChevronRight, Users, Tag } from 'lucide-react';
+import { Heart, ShoppingBag, Search, User as UserIcon, Menu, X, ChevronRight, Users, Tag, Store } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { useFavoritesStore } from '../../store/favoritesStore';
 import { motion, AnimatePresence } from 'motion/react';
 
 const Navbar: React.FC = () => {
   const { user, setUser } = useAuthStore();
+  const { favorites, setIsOpen: setIsFavoritesOpen } = useFavoritesStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogin = () => {
@@ -18,13 +20,16 @@ const Navbar: React.FC = () => {
     setIsMenuOpen(false);
   };
 
-  const navLinks = [
-    { name: 'Marketplace', path: '/' },
-    { name: 'Categories', path: '/categories' },
-    { name: 'Students', path: '/students' },
-    { name: 'Student Needs', path: '/requests' },
-    { name: 'Post Request', path: '/create-request' },
-  ];
+  const navLinks = user 
+    ? [
+        { name: 'Categories', path: '/categories' },
+        { name: 'Dashboard', path: '/dashboard' },
+        { name: 'Post Request', path: '/create-request' },
+      ]
+    : [
+        { name: 'Marketplace', path: '/' },
+        { name: 'Categories', path: '/categories' },
+      ];
 
   return (
     <nav className="sticky top-0 z-50 border-b border-white/20 bg-white/70 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,186,134,0.03)] sm:bg-white/65">
@@ -32,7 +37,7 @@ const Navbar: React.FC = () => {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-4 md:gap-8">
-            <Link to="/" className="group flex items-center gap-2 transition-opacity md:gap-3">
+            <Link to="/#categories-section" className="group flex items-center gap-2 transition-opacity md:gap-3">
               <div className="relative flex h-10 w-10 items-center justify-center transition-transform group-hover:scale-105 md:h-14 md:w-14">
                 <img 
                   src="/logo.png" 
@@ -62,7 +67,9 @@ const Navbar: React.FC = () => {
                 <Link 
                   key={link.path}
                   to={link.path} 
-                  className="text-sm font-semibold text-slate-600 transition-colors hover:text-brand-primary"
+                  className={`text-sm font-semibold text-slate-600 transition-colors hover:text-brand-primary ${
+                    link.name === 'Post Request' ? 'font-black' : ''
+                  }`}
                 >
                   {link.name}
                 </Link>
@@ -83,10 +90,17 @@ const Navbar: React.FC = () => {
 
             {user ? (
               <div className="flex items-center gap-3 sm:gap-6">
-                <Link to="/cart" className="relative rounded-full p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900">
-                  <ShoppingBag size={20} className="sm:size-[22px]" />
-                  <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">3</span>
-                </Link>
+                <button 
+                  onClick={() => setIsFavoritesOpen(true)}
+                  className="relative rounded-full p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                >
+                  <Heart size={20} className="sm:size-[22px]" />
+                  {favorites.length > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-pink-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
+                      {favorites.length}
+                    </span>
+                  )}
+                </button>
                 <div className="flex items-center gap-2 sm:gap-3">
                   <div className="hidden text-right md:block">
                     <p className="text-xs font-bold text-slate-900">{user.displayName || 'Student'}</p>
@@ -165,12 +179,13 @@ const Navbar: React.FC = () => {
                         <Link
                           to={link.path}
                           onClick={() => setIsMenuOpen(false)}
-                          className="flex items-center justify-between rounded-2xl bg-white p-4 text-sm font-bold text-slate-900 shadow-sm ring-1 ring-slate-100 transition-all hover:bg-slate-50 active:scale-95 active:bg-slate-100"
+                          className="group flex items-center justify-between rounded-2xl bg-white p-4 text-sm font-bold text-slate-900 shadow-sm ring-1 ring-slate-100 transition-all hover:bg-slate-50 active:scale-95 active:bg-slate-100"
                         >
                           <span className="flex items-center gap-3">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-50 text-brand-primary">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-400 transition-colors group-hover:bg-brand-primary/10 group-hover:text-brand-primary">
                               {link.name === 'Marketplace' && <Search size={18} />}
                               {link.name === 'Categories' && <Menu size={18} />}
+                              {link.name === 'Dashboard' && <Store size={18} />}
                               {link.name === 'Students' && <Users size={18} />}
                               {link.name === 'Student Needs' && <Tag size={18} />}
                               {link.name === 'Post Request' && <ShoppingBag size={18} />}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowRight, Search, ShoppingBag, X, CheckCircle2, TrendingUp, Users } from 'lucide-react';
+import { ArrowRight, Search, ShoppingBag, X, CheckCircle2, TrendingUp, Users, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const CATEGORIES = [
@@ -50,7 +50,7 @@ const Categories: React.FC = () => {
               >
                 <button 
                   onClick={() => setSelectedCategory(null)}
-                  className="absolute right-6 top-6 rounded-full bg-white/20 p-2 text-slate-900 transition-colors hover:bg-white/40 active:scale-95 sm:right-8 sm:top-8"
+                  className="absolute right-6 top-6 z-50 rounded-full bg-white/20 p-2 text-slate-900 transition-colors hover:bg-white/40 active:scale-95 sm:right-8 sm:top-8"
                 >
                   <X size={24} />
                 </button>
@@ -224,74 +224,43 @@ const Categories: React.FC = () => {
             ))}
           </motion.div>
 
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="group relative mt-24 overflow-hidden rounded-[2.5rem] bg-slate-900 px-8 py-16 text-center sm:rounded-[4rem] sm:px-12 sm:py-24"
-          >
-            {/* Background pattern */}
-            <div className="absolute inset-0 z-0 opacity-10" 
-                 style={{ backgroundImage: 'radial-gradient(circle, #22c55e 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-            
-            <div className="relative z-10 mx-auto max-w-2xl">
-              <div className="mb-10 flex justify-center" style={{ perspective: 1000 }}>
-                <motion.div
-                  animate={{ 
-                    y: [0, -12, 0],
-                    rotateY: [0, 15, 0, -15, 0],
-                    rotateX: [0, -8, 0, 8, 0]
-                  }}
-                  transition={{ 
-                    duration: 5, 
-                    repeat: Infinity, 
-                    ease: "easeInOut" 
-                  }}
-                  whileHover={{ 
-                    scale: 1.15, 
-                    rotateY: 25,
-                    transition: { duration: 0.3 }
-                  }}
-                  className="relative flex items-center justify-center"
-                >
-                  <img 
-                    src="/logo.png" 
-                    alt="Logo" 
-                    className="h-32 w-32 object-contain drop-shadow-[0_20px_50px_rgba(34,197,94,0.3)] sm:h-56 sm:w-56"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      const fallback = e.currentTarget.parentElement?.querySelector('.fallback-icon');
-                      if (fallback) fallback.classList.remove('hidden');
-                    }}
-                  />
-                  <ShoppingBag size={80} className="fallback-icon hidden text-brand-primary" />
-                </motion.div>
+          <div className="mt-24">
+            <div className="mb-10">
+              <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-brand-primary sm:text-xs">
+                <span className="h-1 w-6 bg-brand-primary rounded-full sm:w-8" /> Regional Presence
               </div>
-
-              <h2 className="mb-6 text-4xl font-[900] tracking-tight text-white sm:text-6xl">
-                Ready to <span className="bg-linear-to-r from-brand-primary to-green-400 bg-clip-text text-transparent">Start Selling?</span>
+              <h2 className="text-3xl font-[900] tracking-tight text-slate-900 sm:text-4xl">
+                Network <span className="text-brand-primary">Coverage</span>
               </h2>
-              
-              <p className="mx-auto mb-12 text-base font-bold leading-relaxed text-slate-300 sm:text-xl">
-                Join our thriving network of student vendors. Reach your campus community instantly with zero fees and secure student-to-student transactions.
-              </p>
-
-              <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-                <Link 
-                  to="/auth" 
-                  className="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-full bg-brand-primary px-10 py-5 text-sm font-black text-white shadow-[0_20px_40px_-10px_rgba(34,197,94,0.3)] transition-all hover:scale-105 hover:bg-green-600 active:scale-95 sm:w-auto sm:text-base"
-                >
-                  <span className="relative z-10 flex items-center gap-2">
-                    Create Vendor Account <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
-                  </span>
-                </Link>
-              </div>
+              <p className="mt-3 text-sm font-bold text-slate-500">Find vendors active across major Lesotho campuses and districts.</p>
             </div>
-
-            {/* Glowing accents */}
-            <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full bg-brand-primary/20 blur-[100px]" />
-            <div className="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-green-500/20 blur-[100px]" />
-          </motion.div>
+            
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                { name: 'Roma Campus (NUL)', vendors: 24, university: 'NUL' },
+                { name: 'Maseru (LUCT)', vendors: 18, university: 'LUCT' },
+                { name: 'Leribe (LCE)', vendors: 7, university: 'LCE' },
+                { name: 'Maseru (CAS)', vendors: 12, university: 'CAS' },
+              ].map((loc, idx) => (
+                <motion.div 
+                  key={loc.name}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="group relative overflow-hidden rounded-3xl bg-white p-6 shadow-sm border border-slate-100 transition-all hover:-translate-y-1 hover:shadow-xl hover:border-brand-primary/20"
+                >
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-brand-primary transition-colors group-hover:bg-brand-primary group-hover:text-white">
+                    <MapPin size={24} />
+                  </div>
+                  <h4 className="text-lg font-black text-slate-900">{loc.name}</h4>
+                  <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-brand-primary transition-colors">
+                    {loc.vendors} Ready Vendors
+                  </p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
     </div>

@@ -5,6 +5,7 @@ interface User {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
+  role: 'student' | 'vendor' | null;
 }
 
 interface AuthState {
