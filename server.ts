@@ -20,6 +20,100 @@ async function startServer() {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
+  // Proxy to partner's backend - Defaulting to provided public URL
+  const PARTNER_BACKEND_URL = process.env.BACKEND_URL || "https://kkgq3q14-8000.inc1.devtunnels.ms";
+
+  // Auth Proxies
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const response = await fetch(`${PARTNER_BACKEND_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req.body),
+      });
+      const data = await response.json();
+      res.status(response.status).json(data);
+    } catch (error) {
+      console.error("Login proxy error:", error);
+      res.status(500).json({ error: "Failed to connect to backend" });
+    }
+  });
+
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const response = await fetch(`${PARTNER_BACKEND_URL}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req.body),
+      });
+      const data = await response.json();
+      res.status(response.status).json(data);
+    } catch (error) {
+      console.error("Register proxy error:", error);
+      res.status(500).json({ error: "Failed to connect to backend" });
+    }
+  });
+
+  // Data Fetching Proxies
+  app.get("/api/requests", async (req, res) => {
+    try {
+      const response = await fetch(`${PARTNER_BACKEND_URL}/requests`);
+      const data = await response.json();
+      res.status(response.status).json(data);
+    } catch (error) {
+      console.error("Requests fetch proxy error:", error);
+      res.status(500).json({ error: "Failed to fetch requests from backend" });
+    }
+  });
+
+  app.get("/api/students", async (req, res) => {
+    try {
+      const response = await fetch(`${PARTNER_BACKEND_URL}/students`);
+      const data = await response.json();
+      res.status(response.status).json(data);
+    } catch (error) {
+      console.error("Students fetch proxy error:", error);
+      res.status(500).json({ error: "Failed to fetch students from backend" });
+    }
+  });
+
+  app.get("/api/categories", async (req, res) => {
+    try {
+      const response = await fetch(`${PARTNER_BACKEND_URL}/categories`);
+      const data = await response.json();
+      res.status(response.status).json(data);
+    } catch (error) {
+      console.error("Categories fetch proxy error:", error);
+      res.status(500).json({ error: "Failed to fetch categories from backend" });
+    }
+  });
+
+  app.get("/api/vendors", async (req, res) => {
+    try {
+      const response = await fetch(`${PARTNER_BACKEND_URL}/vendors`);
+      const data = await response.json();
+      res.status(response.status).json(data);
+    } catch (error) {
+      console.error("Vendors fetch proxy error:", error);
+      res.status(500).json({ error: "Failed to fetch vendors from backend" });
+    }
+  });
+
+  app.post("/api/updates", async (req, res) => {
+    try {
+      const response = await fetch(`${PARTNER_BACKEND_URL}/updates`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req.body),
+      });
+      const data = await response.json();
+      res.status(response.status).json(data);
+    } catch (error) {
+      console.error("Push update proxy error:", error);
+      res.status(500).json({ error: "Failed to connect to backend" });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

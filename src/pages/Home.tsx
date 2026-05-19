@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, ArrowRight, Lock, ShieldCheck, MapPin, X, Shield, Users, CreditCard, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -49,9 +49,42 @@ const FEATURES = [
   }
 ];
 
+import { dataApi } from '../lib/api';
+
+const MOCK_CATEGORIES = [
+  { name: 'Textbooks', emoji: '📚', count: '150+', color: 'bg-emerald-50 text-brand-primary', border: 'border-emerald-100', accent: 'bg-emerald-500' },
+  { name: 'Tech & Gear', emoji: '💻', count: '85+', color: 'bg-blue-50 text-blue-700', border: 'border-blue-100', accent: 'bg-blue-500' },
+  { name: 'Fashion', emoji: '👕', count: '210+', color: 'bg-rose-50 text-rose-700', border: 'border-rose-100', accent: 'bg-rose-500' },
+  { name: 'Handmade', emoji: '🎨', count: '45+', color: 'bg-amber-50 text-amber-700', border: 'border-amber-100', accent: 'bg-amber-500' },
+  { name: 'Services', emoji: '🛠️', count: '32+', color: 'bg-teal-50 text-teal-700', border: 'border-teal-100', accent: 'bg-teal-500' },
+  { name: 'Living', emoji: '🏠', count: '64+', color: 'bg-indigo-50 text-indigo-700', border: 'border-indigo-100', accent: 'bg-indigo-500' },
+  { name: 'Stationery', emoji: '✏️', count: '120+', color: 'bg-orange-50 text-orange-700', border: 'border-orange-100', accent: 'bg-orange-500' },
+  { name: 'Explore All', emoji: '🗺️', count: '500+', color: 'bg-slate-50 text-slate-700', border: 'border-slate-100', accent: 'bg-slate-900' },
+];
+
 const Home: React.FC = () => {
   const { user } = useAuthStore();
   const [selectedFeature, setSelectedFeature] = useState<typeof FEATURES[0] | null>(null);
+  const [categories, setCategories] = useState<any[]>(MOCK_CATEGORIES);
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    try {
+      const response = await dataApi.getCategories();
+      if (response.data && Array.isArray(response.data)) {
+        // Only take the first 7 to fit the layout, + 'Explore All'
+        const fetched = response.data.slice(0, 7);
+        if (fetched.length > 0) {
+          setCategories([...fetched, MOCK_CATEGORIES[7]]);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch categories for home:', err);
+    }
+  };
 
   return (
     <div className="py-8 sm:py-12 selection:bg-brand-primary/10 selection:text-brand-primary">
@@ -297,16 +330,7 @@ const Home: React.FC = () => {
           }}
           className="grid grid-cols-2 gap-4 sm:gap-8 lg:grid-cols-4"
         >
-          {[
-            { name: 'Textbooks', emoji: '📚', count: '150+', color: 'bg-emerald-50 text-brand-primary', border: 'border-emerald-100', accent: 'bg-emerald-500' },
-            { name: 'Tech & Gear', emoji: '💻', count: '85+', color: 'bg-blue-50 text-blue-700', border: 'border-blue-100', accent: 'bg-blue-500' },
-            { name: 'Fashion', emoji: '👕', count: '210+', color: 'bg-rose-50 text-rose-700', border: 'border-rose-100', accent: 'bg-rose-500' },
-            { name: 'Handmade', emoji: '🎨', count: '45+', color: 'bg-amber-50 text-amber-700', border: 'border-amber-100', accent: 'bg-amber-500' },
-            { name: 'Services', emoji: '🛠️', count: '32+', color: 'bg-teal-50 text-teal-700', border: 'border-teal-100', accent: 'bg-teal-500' },
-            { name: 'Living', emoji: '🏠', count: '64+', color: 'bg-indigo-50 text-indigo-700', border: 'border-indigo-100', accent: 'bg-indigo-500' },
-            { name: 'Stationery', emoji: '✏️', count: '120+', color: 'bg-orange-50 text-orange-700', border: 'border-orange-100', accent: 'bg-orange-500' },
-            { name: 'Explore All', emoji: '🗺️', count: '500+', color: 'bg-slate-50 text-slate-700', border: 'border-slate-100', accent: 'bg-slate-900' },
-          ].map((cat) => (
+          {categories.map((cat) => (
             <motion.div
               key={cat.name}
               variants={{
