@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { User, MapPin, GraduationCap, Star, ShieldCheck, Mail, MessageSquare, X, ArrowRight } from 'lucide-react';
 
-const STUDENTS = [
+import { dataApi } from '../lib/api';
+
+const MOCK_STUDENTS = [
   {
     id: 's1',
     name: 'Thabo Mokoena',
@@ -58,11 +60,29 @@ const STUDENTS = [
 ];
 
 const Students: React.FC = () => {
-  const [selectedStudent, setSelectedStudent] = useState<typeof STUDENTS[0] | null>(null);
+  const [students, setStudents] = useState<any[]>(MOCK_STUDENTS);
+  const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    loadStudents();
   }, []);
+
+  const loadStudents = async () => {
+    try {
+      setLoading(true);
+      const response = await dataApi.getStudents();
+      if (response.data && Array.isArray(response.data)) {
+        setStudents(response.data.length > 0 ? response.data : MOCK_STUDENTS);
+      }
+    } catch (err) {
+      console.error('Failed to fetch students, using mocks:', err);
+      setStudents(MOCK_STUDENTS);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50/50 pb-20 selection:bg-brand-primary/10 selection:text-brand-primary">
@@ -188,13 +208,13 @@ const Students: React.FC = () => {
               <p className="mt-2 font-bold text-slate-500">Based on your vendor category</p>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-black text-slate-900">{STUDENTS.length}</p>
+              <p className="text-2xl font-black text-slate-900">{students.length}</p>
               <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Total Found</p>
             </div>
           </div>
 
             <div className="grid grid-cols-2 gap-4 sm:gap-8">
-            {STUDENTS.map((student) => (
+            {students.map((student) => (
               <motion.button
                 key={student.id}
                 layoutId={`student-${student.id}`}

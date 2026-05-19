@@ -18,7 +18,9 @@ import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useFavoritesStore } from '../store/favoritesStore';
 
-const VENDORS = [
+import { dataApi } from '../lib/api';
+
+const MOCK_VENDORS = [
   {
     id: 'v1',
     name: 'Roma Tech Hub',
@@ -72,14 +74,32 @@ const VENDORS = [
 const StudentDashboard: React.FC = () => {
   const { user } = useAuthStore();
   const { toggleFavorite, isFavorite, setIsOpen: setIsFavoritesOpen } = useFavoritesStore();
+  const [vendors, setVendors] = useState<any[]>(MOCK_VENDORS);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    loadVendors();
   }, []);
 
-  const handleToggleFavorite = (vendor: typeof VENDORS[0]) => {
+  const loadVendors = async () => {
+    try {
+      setLoading(true);
+      const response = await dataApi.getVendors();
+      if (response.data && Array.isArray(response.data)) {
+        setVendors(response.data.length > 0 ? response.data : MOCK_VENDORS);
+      }
+    } catch (err) {
+      console.error('Failed to fetch vendors, using mocks:', err);
+      setVendors(MOCK_VENDORS);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleFavorite = (vendor: any) => {
     toggleFavorite({
       id: vendor.id,
       name: vendor.name,
@@ -92,9 +112,10 @@ const StudentDashboard: React.FC = () => {
     }
   };
 
-  const filteredVendors = VENDORS.filter(v => 
-    v.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.category.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredVendors = vendors.filter(v => 
+    (v.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    v.category.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    (activeTab === 'all' || v.category.toLowerCase() === activeTab)
   );
 
   return (

@@ -4,6 +4,7 @@ import { ShoppingBag, Mail, Lock, UserCircle, Store, ArrowRight, Sparkles, Zap, 
 import { auth, db } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { authApi } from '../lib/api';
 
 const countryCodes = [
   { code: '+266', name: 'LS', flag: '🇱🇸' },
@@ -52,7 +53,6 @@ const Auth: React.FC = () => {
     setLoading(true);
     setError('');
 
-    // Mock verification for passwords
     if (mode === 'register' && password !== confirmPassword) {
       setError('Passwords do not match');
       setLoading(false);
@@ -65,25 +65,74 @@ const Auth: React.FC = () => {
       return;
     }
 
-    // Mock success
-    setTimeout(() => {
-      const mockUser = {
-        uid: 'demo-' + Math.random().toString(36).substr(2, 9),
-        email: email,
-        displayName: displayName || (email.split('@')[0]),
-        photoURL: null,
-        role: role
+    try {
+      const payload = {
+        email,
+        password,
+        username: displayName, // Added 'name' as a common alternative
+        // displayName: mode === 'register' ? displayName : undefined,
+        role: mode === 'register' ? role : undefined,
+        phone: mode === 'register' ? `${countryCode}${phone}` : undefined,
+        // phone_number: mode === 'register' ? `${countryCode}${phone}` : undefined, // Added common alternative
+        school: (mode === 'register' && role === 'student') ? school : undefined,
+      };
+console.log('Auth payload:', payload);
+      const response = await (mode === 'login' ? authApi.login(payload) : authApi.register(payload));
+      const data = response.data;
+
+      // Mapping backend response to store user format
+      const user = {
+        uid: data.uid || data.id || 'user-' + Date.now(),
+        email: data.email || email,
+        displayName: data.displayName || data.name || displayName || email.split('@')[0],
+        photoURL: data.photoURL || null,
+        role: data.role || role
       };
       
-      useAuthStore.getState().setUser(mockUser as any);
-      setLoading(false);
+      useAuthStore.getState().setUser(user as any);
       setShowSuccess(true);
       
-      // Delay redirect to show success message
       setTimeout(() => {
         navigate('/dashboard');
       }, 1500);
-    }, 1200);
+    } catch (err: any) {
+      console.error('Auth error detailed:', err);
+      
+      let errorMessage = 'An error occurred during authentication';
+      
+      if (err.response?.data) {
+        const data = err.response.data;
+        
+        // Try to find a message in common places
+        if (typeof data === 'string') {
+          errorMessage = data;
+        } else if (data.message) {
+          errorMessage = data.message;
+        } else if (data.error) {
+          errorMessage = data.error;
+        } else if (data.errors) {
+          // Flatten Laravel/Django style validation errors
+          if (typeof data.errors === 'object') {
+            const firstKey = Object.keys(data.errors)[0];
+            const firstError = data.errors[firstKey];
+            errorMessage = Array.isArray(firstError) ? `${firstKey}: ${firstError[0]}` : `${firstKey}: ${firstError}`;
+          }
+        } else if (typeof data === 'object') {
+          // Just fall back to showing keys if it's a flat object of errors
+          const keys = Object.keys(data);
+          if (keys.length > 0) {
+            const firstError = data[keys[0]];
+            errorMessage = Array.isArray(firstError) ? `${keys[0]}: ${firstError[0]}` : `${keys[0]}: ${firstError}`;
+          }
+        }
+      } else {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signInWithGoogle = () => {

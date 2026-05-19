@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, Search, ShoppingBag, X, CheckCircle2, TrendingUp, Users, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const CATEGORIES = [
+import { dataApi } from '../lib/api';
+
+const MOCK_CATEGORIES = [
   { name: 'Textbooks', emoji: '📚', count: '150+', color: 'bg-emerald-50 text-brand-primary', border: 'border-emerald-100', accent: 'bg-emerald-500', description: 'Find course materials and used books from fellow students.' },
   { name: 'Tech & Gear', emoji: '💻', count: '85+', color: 'bg-blue-50 text-blue-700', border: 'border-blue-100', accent: 'bg-blue-500', description: 'Calculators, laptops, chargers, and other essential campus tech.' },
   { name: 'Fashion', emoji: '👕', count: '210+', color: 'bg-rose-50 text-rose-700', border: 'border-rose-100', accent: 'bg-rose-500', description: 'Campus wear, traditional attire, and stylish student-made pieces.' },
@@ -19,11 +21,29 @@ const CATEGORIES = [
 ];
 
 const Categories: React.FC = () => {
-  const [selectedCategory, setSelectedCategory] = useState<typeof CATEGORIES[0] | null>(null);
+  const [categories, setCategories] = useState<any[]>(MOCK_CATEGORIES);
+  const [selectedCategory, setSelectedCategory] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  React.useEffect(() => {
+  useEffect(() => {
     window.scrollTo(0, 0);
+    loadCategories();
   }, []);
+
+  const loadCategories = async () => {
+    try {
+      setLoading(true);
+      const response = await dataApi.getCategories();
+      if (response.data && Array.isArray(response.data)) {
+        setCategories(response.data.length > 0 ? response.data : MOCK_CATEGORIES);
+      }
+    } catch (err) {
+      console.error('Failed to fetch categories, using mocks:', err);
+      setCategories(MOCK_CATEGORIES);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white selection:bg-brand-primary/10 selection:text-brand-primary">
@@ -172,7 +192,7 @@ const Categories: React.FC = () => {
             }}
             className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4"
           >
-            {CATEGORIES.map((cat) => (
+            {categories.map((cat) => (
               <motion.div
                 key={cat.name}
                 variants={{

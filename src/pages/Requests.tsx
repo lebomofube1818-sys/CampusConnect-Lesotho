@@ -16,7 +16,9 @@ import {
   CheckCircle2
 } from 'lucide-react';
 
-const REQUESTS = [
+import { dataApi } from '../lib/api';
+
+const MOCK_REQUESTS = [
   {
     id: 'req1',
     item: 'HP Laptop Charger (65W)',
@@ -68,16 +70,34 @@ const REQUESTS = [
 ];
 
 const Requests: React.FC = () => {
-  const [selectedRequest, setSelectedRequest] = useState<typeof REQUESTS[0] | null>(null);
+  const [requests, setRequests] = useState<any[]>(MOCK_REQUESTS);
+  const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
   const [filter, setFilter] = useState('All');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    loadRequests();
   }, []);
 
+  const loadRequests = async () => {
+    try {
+      setLoading(true);
+      const response = await dataApi.getRequests();
+      if (response.data && Array.isArray(response.data)) {
+        setRequests(response.data.length > 0 ? response.data : MOCK_REQUESTS);
+      }
+    } catch (err) {
+      console.error('Failed to fetch requests, using mocks:', err);
+      setRequests(MOCK_REQUESTS);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredRequests = filter === 'All' 
-    ? REQUESTS 
-    : REQUESTS.filter(r => r.category === filter || r.campus === filter);
+    ? requests 
+    : requests.filter(r => r.category === filter || r.campus === filter);
 
   return (
     <div className="min-h-screen bg-white pb-20 selection:bg-brand-primary/10 selection:text-brand-primary">
