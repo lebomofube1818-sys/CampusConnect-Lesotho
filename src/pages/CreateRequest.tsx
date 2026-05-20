@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { 
   ShoppingBag, 
@@ -11,6 +11,7 @@ import {
   Info
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
 import { updatesApi } from '../lib/api';
 
 const CATEGORIES = [
@@ -37,12 +38,19 @@ const CreateRequest: React.FC = () => {
   const [urgency, setUrgency] = useState('medium');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
 
+  const { user } = useAuthStore();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
     
     try {
       // Create the request object
@@ -56,20 +64,56 @@ const CreateRequest: React.FC = () => {
       };
 
       // Try to push update to partner's backend
-      await updatesApi.pushUpdate({
-        type: 'NEW_REQUEST',
-        data: newRequest
-      });
+      try {
+        await updatesApi.pushUpdate({
+          type: 'NEW_REQUEST',
+          data: newRequest
+        });
+      } catch (apiErr) {
+        console.warn('Backend proxy update skipped or failed, using local fallback:', apiErr);
+      }
+
+      // Format for local storage using the common Requests schema
+      const getCampusFromSchool = (schoolName: string | undefined | null): string => {
+        if (!schoolName) return 'Roma';
+        const s = schoolName.toUpperCase();
+        if (s.includes('NUL') || s.includes('LESOTHO') || s.includes('ROMA')) return 'Roma';
+        if (s.includes('LUCT') || s.includes('LIMKOKWING') || s.includes('CAS') || s.includes('ACCOUNTING') || s.includes('LEROTHOLI') || s.includes('MASERU')) return 'Maseru';
+        if (s.includes('LCE') || s.includes('EDUCATION') || s.includes('LERIBE')) return 'Leribe';
+        return 'Roma';
+      };
+
+      const urgencyLabel = urgency === 'low' ? 'Casual' : urgency === 'high' ? 'Urgent' : 'Needed Soon';
+
+      const localNewRequest = {
+        id: `req-local-${Date.now()}`,
+        item: title,
+        category,
+        budget,
+        description,
+        student: user?.displayName || 'Demo Student',
+        studentUid: user?.uid || 'demo-uid',
+        campus: user?.school ? getCampusFromSchool(user.school) : 'Roma',
+        postedAt: 'Just now',
+        urgency: urgencyLabel,
+        status: urgency === 'high' ? 'urgent' : 'open',
+        timestamp: new Date().toISOString()
+      };
+
+      const existing = localStorage.getItem('client_student_requests');
+      const reqList = existing ? JSON.parse(existing) : [];
+      reqList.unshift(localNewRequest);
+      localStorage.setItem('client_student_requests', JSON.stringify(reqList));
 
       setLoading(false);
       setSuccess(true);
-      setTimeout(() => navigate('/'), 2000);
-    } catch (err) {
+      setTimeout(() => navigate('/dashboard'), 2000); // Redirect to student dashboard
+    } catch (err: any) {
       console.error('Submit error:', err);
-      // Even if call fails, we show success on client for now to keep flow going
+      const errorMessage = err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to post request';
+      setError(errorMessage);
+    } finally {
       setLoading(false);
-      setSuccess(true);
-      setTimeout(() => navigate('/'), 2000);
     }
   };
 
@@ -100,14 +144,12 @@ const CreateRequest: React.FC = () => {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
         >
-          <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-primary">
-            <Sparkles size={14} /> Marketplace Help
-          </div>
+
           <h1 className="text-4xl font-black tracking-tight text-slate-900 md:text-5xl">
             Post a <span className="text-brand-primary underline decoration-brand-primary/20 decoration-8 underline-offset-4">Request</span>
           </h1>
           <p className="mt-3 text-lg font-medium text-slate-500">
-            Can't find what you need? Describe it here and let the campus community find it for you.
+            Looking for something? Describe it here and let the campus community find it for you.
           </p>
         </motion.div>
       </div>
@@ -207,10 +249,23 @@ const CreateRequest: React.FC = () => {
           </div>
         </div>
 
+        {error && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="rounded-2xl bg-red-50 p-4 border border-red-100"
+          >
+            <div className="flex items-center gap-3">
+              <AlertCircle className="text-red-500 shrink-0" size={20} />
+              <p className="text-sm font-bold text-red-600">{error}</p>
+            </div>
+          </motion.div>
+        )}
+
         <div className="flex flex-col gap-4 sm:flex-row">
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate(user ? '/dashboard' : '/')}
             className="flex-1 rounded-3xl bg-slate-100 py-5 text-base font-black text-slate-600 transition-all hover:bg-slate-200 active:scale-95"
           >
             Cancel

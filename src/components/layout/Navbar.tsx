@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, ShoppingBag, Search, User as UserIcon, Menu, X, ChevronRight, Users, Tag, Store } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
@@ -20,24 +20,20 @@ const Navbar: React.FC = () => {
     setIsMenuOpen(false);
   };
 
-  useEffect(() => {
-    const testBackendConnection = async () => {
-      const response = await fetch('https://kkgq3q14-8000.inc1.devtunnels.ms/');
-      console.log('Backend response:', response);
-    };
-    testBackendConnection();
-  }, []);
-
-  const navLinks = user
-    ? [
-      { name: 'Categories', path: '/categories' },
-      { name: 'Dashboard', path: '/dashboard' },
-      { name: 'Post Request', path: '/create-request' },
-    ]
+  const navLinks = user 
+    ? (user.role === 'vendor'
+        ? [
+            { name: 'My Dashboard', path: '/dashboard' },
+            { name: 'Live student requests', path: '/requests' },
+          ]
+        : [
+            { name: 'Post Request', path: '/create-request' },
+            { name: 'My Dashboard', path: '/dashboard' },
+          ]
+      )
     : [
-      { name: 'Marketplace', path: '/' },
-      { name: 'Categories', path: '/categories' },
-    ];
+        { name: 'Marketplace', path: '/' },
+      ];
 
   return (
     <nav className="sticky top-0 z-50 border-b border-white/20 bg-white/70 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,186,134,0.03)] sm:bg-white/65">
@@ -45,11 +41,11 @@ const Navbar: React.FC = () => {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-4 md:gap-8">
-            <Link to="/#categories-section" className="group flex items-center gap-2 transition-opacity md:gap-3">
+            <Link to={user ? '/dashboard' : '/'} className="group flex items-center gap-2 transition-opacity md:gap-3">
               <div className="relative flex h-10 w-10 items-center justify-center transition-transform group-hover:scale-105 md:h-14 md:w-14">
-                <img
-                  src="/logo.png"
-                  alt="Logo"
+                <img 
+                  src="/logo.png" 
+                  alt="Logo" 
                   className="relative z-10 h-full w-full object-contain"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
@@ -72,11 +68,12 @@ const Navbar: React.FC = () => {
             {/* Desktop Navigation */}
             <div className="hidden md:flex md:items-center md:gap-6">
               {navLinks.map((link) => (
-                <Link
+                <Link 
                   key={link.path}
-                  to={link.path}
-                  className={`text-sm font-semibold text-slate-600 transition-colors hover:text-brand-primary ${link.name === 'Post Request' ? 'font-black' : ''
-                    }`}
+                  to={link.path} 
+                  className={`text-sm font-semibold text-slate-600 transition-colors hover:text-brand-primary ${
+                    link.name === 'Post Request' ? 'font-black' : ''
+                  }`}
                 >
                   {link.name}
                 </Link>
@@ -88,16 +85,16 @@ const Navbar: React.FC = () => {
           <div className="flex items-center gap-2 sm:gap-4">
             <div className="relative hidden lg:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <input
-                type="text"
-                placeholder="Search items, vendors, or requests..."
+              <input 
+                type="text" 
+                placeholder="Search items, vendors, or requests..." 
                 className="h-10 w-80 rounded-full border-none bg-slate-100/80 pl-10 pr-4 text-sm outline-none transition-all focus:ring-2 focus:ring-brand-primary sm:w-96"
               />
             </div>
 
             {user ? (
               <div className="flex items-center gap-3 sm:gap-6">
-                <button
+                <button 
                   onClick={() => setIsFavoritesOpen(true)}
                   className="relative rounded-full p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
                 >
@@ -125,7 +122,7 @@ const Navbar: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <Link
+              <Link 
                 to="/login"
                 className="group flex items-center gap-1.5 rounded-full bg-brand-primary px-3.5 py-1.5 text-[10px] font-black text-white shadow-lg shadow-green-100 transition-all hover:bg-green-600 hover:-translate-y-0.5 active:scale-95 sm:gap-2 sm:px-5 sm:py-2 sm:text-xs"
               >
@@ -135,8 +132,8 @@ const Navbar: React.FC = () => {
                 <span>Sign In</span>
               </Link>
             )}
-
-            <button
+            
+            <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="group flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition-colors hover:bg-slate-100 active:scale-90 md:hidden"
             >
@@ -165,7 +162,7 @@ const Navbar: React.FC = () => {
               className="fixed right-0 top-16 z-50 h-[calc(100vh-64px)] w-[85%] max-w-xs overflow-y-auto border-l border-white/20 bg-white/95 p-6 shadow-[0_20px_50px_rgba(0,0,0,0.1)] backdrop-blur-xl md:hidden"
             >
               <div className="flex flex-col gap-8">
-                <motion.div
+                <motion.div 
                   initial="hidden"
                   animate="visible"
                   variants={{
@@ -192,9 +189,9 @@ const Navbar: React.FC = () => {
                             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-400 transition-colors group-hover:bg-brand-primary/10 group-hover:text-brand-primary">
                               {link.name === 'Marketplace' && <Search size={18} />}
                               {link.name === 'Categories' && <Menu size={18} />}
-                              {link.name === 'Dashboard' && <Store size={18} />}
+                              {(link.name === 'Dashboard' || link.name === 'My Dashboard') && <Store size={18} />}
                               {link.name === 'Students' && <Users size={18} />}
-                              {link.name === 'Student Needs' && <Tag size={18} />}
+                              {(link.name === 'Student Needs' || link.name === 'Live student requests') && <Tag size={18} />}
                               {link.name === 'Post Request' && <ShoppingBag size={18} />}
                             </div>
                             {link.name}
@@ -208,12 +205,12 @@ const Navbar: React.FC = () => {
 
                 <div className="h-px bg-linear-to-r from-transparent via-slate-100 to-transparent" />
 
-                <motion.div
-                  initial="hidden"
-                  animate="visible"
-                  variants={{
-                    visible: { transition: { staggerChildren: 0.05, delayChildren: 0.2 } }
-                  }}
+                <motion.div 
+                   initial="hidden"
+                   animate="visible"
+                   variants={{
+                     visible: { transition: { staggerChildren: 0.05, delayChildren: 0.2 } }
+                   }}
                   className="flex flex-col gap-2"
                 >
                   <h3 className="mb-2 px-3 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Your Account</h3>
@@ -240,7 +237,7 @@ const Navbar: React.FC = () => {
                           </div>
                         </Link>
                       </motion.div>
-
+                      
                       <motion.div variants={{ hidden: { x: 20, opacity: 0 }, visible: { x: 0, opacity: 1 } }}>
                         <button
                           onClick={handleLogout}

@@ -69,14 +69,14 @@ const Auth: React.FC = () => {
       const payload = {
         email,
         password,
-        username: displayName, // Added 'name' as a common alternative
-        // displayName: mode === 'register' ? displayName : undefined,
+        name: displayName, // Added 'name' as a common alternative
+        displayName: mode === 'register' ? displayName : undefined,
         role: mode === 'register' ? role : undefined,
         phone: mode === 'register' ? `${countryCode}${phone}` : undefined,
-        // phone_number: mode === 'register' ? `${countryCode}${phone}` : undefined, // Added common alternative
+        phone_number: mode === 'register' ? `${countryCode}${phone}` : undefined, // Added common alternative
         school: (mode === 'register' && role === 'student') ? school : undefined,
       };
-console.log('Auth payload:', payload);
+
       const response = await (mode === 'login' ? authApi.login(payload) : authApi.register(payload));
       const data = response.data;
 
@@ -93,7 +93,7 @@ console.log('Auth payload:', payload);
       setShowSuccess(true);
       
       setTimeout(() => {
-        navigate('/dashboard');
+        navigate(user.role === 'student' ? '/create-request' : '/dashboard');
       }, 1500);
     } catch (err: any) {
       console.error('Auth error detailed:', err);
@@ -149,9 +149,29 @@ console.log('Auth payload:', payload);
       setLoading(false);
       setShowSuccess(true);
       setTimeout(() => {
-        navigate('/dashboard');
+        navigate('/create-request');
       }, 1500);
     }, 1000);
+  };
+
+  const bypassWithMockUser = (selectedRole: 'student' | 'vendor') => {
+    setLoading(true);
+    setTimeout(() => {
+      const mockUser = {
+        uid: `demo-${selectedRole}-${Date.now()}`,
+        email: `demo-${selectedRole}@campusconnect.edu`,
+        displayName: selectedRole === 'student' ? 'Demo Student' : 'Demo Vendor',
+        photoURL: null,
+        role: selectedRole,
+        school: 'National University of Lesotho (NUL)',
+      };
+      useAuthStore.getState().setUser(mockUser as any);
+      setLoading(false);
+      setShowSuccess(true);
+      setTimeout(() => {
+        navigate(selectedRole === 'student' ? '/create-request' : '/dashboard');
+      }, 1500);
+    }, 800);
   };
 
   return (
@@ -459,13 +479,18 @@ console.log('Auth payload:', payload);
             </AnimatePresence>
 
             {error && (
-              <motion.p 
-                initial={{ opacity: 0 }} 
-                animate={{ opacity: 1 }} 
-                className="text-[10px] font-bold text-red-500 text-center uppercase tracking-wider"
-              >
-                {error}
-              </motion.p>
+              <div className="space-y-2">
+                <motion.p 
+                  initial={{ opacity: 0 }} 
+                  animate={{ opacity: 1 }} 
+                  className="text-xs font-bold text-red-500 text-center"
+                >
+                  {error}
+                </motion.p>
+                <p className="text-[10px] font-medium text-slate-400 text-center select-none leading-relaxed">
+                  Tip: If your partner's server is down, use the <strong className="text-slate-600">Sandbox & Development</strong> quick options below to test the applet instantly!
+                </p>
+              </div>
             )}
 
             <div className="pt-6 space-y-4">
@@ -494,14 +519,33 @@ console.log('Auth payload:', payload);
           {/* Social login divider */}
           <div className="mt-8 flex items-center gap-4">
             <div className="h-px flex-1 bg-slate-100"></div>
-            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Trust</span>
+            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Sandbox & Development</span>
             <div className="h-px flex-1 bg-slate-100"></div>
+          </div>
+
+          <div className="mt-6 grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => bypassWithMockUser('student')}
+              className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-emerald-100 bg-emerald-50/20 p-4 font-bold text-slate-700 hover:bg-emerald-50 transition-all active:scale-[0.97]"
+            >
+              <UserCircle size={22} className="text-brand-primary" />
+              <span className="text-[10px] font-black tracking-wider uppercase text-slate-900">Demo Student</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => bypassWithMockUser('vendor')}
+              className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-indigo-100 bg-indigo-50/20 p-4 font-bold text-slate-700 hover:bg-indigo-50 transition-all active:scale-[0.97]"
+            >
+              <Store size={22} className="text-indigo-600" strokeWidth={2} />
+              <span className="text-[10px] font-black tracking-wider uppercase text-slate-900">Demo Vendor</span>
+            </button>
           </div>
 
           <button 
             type="button"
             onClick={signInWithGoogle}
-            className="mt-6 flex w-full items-center justify-center gap-3 rounded-2xl bg-white py-4 text-xs font-black text-slate-700 ring-1 ring-slate-100 shadow-sm transition-all hover:bg-slate-50 active:scale-95"
+            className="mt-4 flex w-full items-center justify-center gap-3 rounded-2xl bg-white py-4 text-xs font-black text-slate-700 ring-1 ring-slate-100 shadow-sm transition-all hover:bg-slate-50 active:scale-95"
           >
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="h-5 w-5" alt="Google" />
             Continue with Google

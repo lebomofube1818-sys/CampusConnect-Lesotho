@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, ArrowRight, Lock, ShieldCheck, MapPin, X, Shield, Users, CreditCard, Plus } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
 const FEATURES = [
@@ -64,8 +64,15 @@ const MOCK_CATEGORIES = [
 
 const Home: React.FC = () => {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const [selectedFeature, setSelectedFeature] = useState<typeof FEATURES[0] | null>(null);
   const [categories, setCategories] = useState<any[]>(MOCK_CATEGORIES);
+
+  useEffect(() => {
+    if (user?.role === 'student') {
+      navigate('/create-request', { replace: true });
+    }
+  }, [user, navigate]);
 
   useEffect(() => {
     loadCategories();

@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { AuthProvider } from './components/AuthProvider';
 import Navbar from './components/layout/Navbar';
@@ -9,9 +9,36 @@ import Requests from './pages/Requests';
 import Auth from './pages/Auth';
 import CreateRequest from './pages/CreateRequest';
 import StudentDashboard from './pages/StudentDashboard';
+import VendorDashboard from './pages/VendorDashboard';
 import { useAuthStore } from './store/authStore';
 import LoadingScreen from './components/ui/LoadingScreen';
 import FavoritesSheet from './components/ui/FavoritesSheet';
+
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+}
+
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+  const { user, loading } = useAuthStore();
+  
+  if (loading) {
+    return null; // Let the global LoadingScreen handle the loading phase
+  }
+  
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+const DashboardRouter: React.FC = () => {
+  const { user } = useAuthStore();
+  if (user?.role === 'vendor') {
+    return <VendorDashboard />;
+  }
+  return <StudentDashboard />;
+};
 
 export default function App() {
   const { loading } = useAuthStore();
@@ -38,8 +65,22 @@ export default function App() {
                   <Route path="/requests" element={<Requests />} />
                   <Route path="/login" element={<Auth />} />
                   <Route path="/register" element={<Auth />} />
-                  <Route path="/dashboard" element={<StudentDashboard />} />
-                  <Route path="/create-request" element={<CreateRequest />} />
+                  <Route 
+                    path="/dashboard" 
+                    element={
+                      <ProtectedRoute>
+                        <DashboardRouter />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/create-request" 
+                    element={
+                      <ProtectedRoute>
+                        <CreateRequest />
+                      </ProtectedRoute>
+                    } 
+                  />
                 </Routes>
               </main>
               <FavoritesSheet />
