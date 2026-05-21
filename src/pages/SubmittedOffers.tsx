@@ -277,7 +277,15 @@ const VendorDashboard: React.FC = () => {
             </p>
           </motion.div>
 
-
+          {/* Add Deals Quick CTA */}
+          <div className="flex gap-3">
+            <button 
+              onClick={() => setShowAddDealModal(true)}
+              className="flex items-center gap-2 rounded-2xl bg-slate-900 px-6 py-4 text-sm font-black text-white shadow-xl transition-all hover:bg-slate-800 active:scale-95"
+            >
+              <Plus size={18} /> Post a Live Deal
+            </button>
+          </div>
         </div>
 
         {/* Sales & Merchant Metric Badges */}

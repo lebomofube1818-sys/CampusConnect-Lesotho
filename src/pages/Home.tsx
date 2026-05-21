@@ -71,6 +71,8 @@ const Home: React.FC = () => {
   useEffect(() => {
     if (user?.role === 'student') {
       navigate('/create-request', { replace: true });
+    } else if (user?.role === 'vendor') {
+      navigate('/dashboard', { replace: true });
     }
   }, [user, navigate]);
 
@@ -178,8 +180,7 @@ const Home: React.FC = () => {
             className="transform-gpu transition-shadow duration-500 hover:drop-shadow-[0_20px_40px_rgba(0,0,0,0.15)]"
           >
             <div className="mb-6 flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold text-green-100 backdrop-blur-md">
-              <Sparkles size={14} className="text-green-300" />
-              <span>THE BIG STUDENT SWAP • 100+ NEW LISTINGS</span>
+              <span>THE BIG STUDENT SWAP • COMING SOON!!</span>
             </div>
             <h1 className="mb-6 text-4xl font-black tracking-tight sm:text-7xl">
               Buy, Sell, <br /> & Connect.

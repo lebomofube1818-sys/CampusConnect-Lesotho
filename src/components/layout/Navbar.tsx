@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, ShoppingBag, Search, User as UserIcon, Menu, X, ChevronRight, Users, Tag, Store } from 'lucide-react';
+import { ShoppingBag, Search, User as UserIcon, Menu, X, ChevronRight, Users, Tag, Store, Briefcase } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
-import { useFavoritesStore } from '../../store/favoritesStore';
 import { motion, AnimatePresence } from 'motion/react';
 
 const Navbar: React.FC = () => {
   const { user, setUser } = useAuthStore();
-  const { favorites, setIsOpen: setIsFavoritesOpen } = useFavoritesStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogin = () => {
@@ -25,6 +23,7 @@ const Navbar: React.FC = () => {
         ? [
             { name: 'My Dashboard', path: '/dashboard' },
             { name: 'Live student requests', path: '/requests' },
+            { name: 'Sale & offers submitted', path: '/submitted-offers' },
           ]
         : [
             { name: 'Post Request', path: '/create-request' },
@@ -94,17 +93,6 @@ const Navbar: React.FC = () => {
 
             {user ? (
               <div className="flex items-center gap-3 sm:gap-6">
-                <button 
-                  onClick={() => setIsFavoritesOpen(true)}
-                  className="relative rounded-full p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
-                >
-                  <Heart size={20} className="sm:size-[22px]" />
-                  {favorites.length > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-pink-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
-                      {favorites.length}
-                    </span>
-                  )}
-                </button>
                 <div className="flex items-center gap-2 sm:gap-3">
                   <div className="hidden text-right md:block">
                     <p className="text-xs font-bold text-slate-900">{user.displayName || 'Student'}</p>
@@ -192,6 +180,7 @@ const Navbar: React.FC = () => {
                               {(link.name === 'Dashboard' || link.name === 'My Dashboard') && <Store size={18} />}
                               {link.name === 'Students' && <Users size={18} />}
                               {(link.name === 'Student Needs' || link.name === 'Live student requests') && <Tag size={18} />}
+                              {link.name === 'Sale & offers submitted' && <Briefcase size={18} />}
                               {link.name === 'Post Request' && <ShoppingBag size={18} />}
                             </div>
                             {link.name}

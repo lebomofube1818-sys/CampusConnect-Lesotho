@@ -183,29 +183,119 @@ const Auth: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4"
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/40 backdrop-blur-xl p-4"
           >
             <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              className="w-full max-w-sm rounded-[3rem] bg-white p-10 text-center shadow-2xl"
+              initial={{ scale: 0.85, opacity: 0, rotateY: -15, y: 30 }}
+              animate={{ scale: 1, opacity: 1, rotateY: 0, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: -20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 180 }}
+              className="w-full max-w-[440px] rounded-[3.5rem] bg-white/90 backdrop-blur-2xl p-10 text-center shadow-[0_50px_100px_-20px_rgba(15,23,42,0.18)] border border-slate-100 relative overflow-hidden"
+              style={{ perspective: 1000, transformStyle: 'preserve-3d' }}
             >
-              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-brand-primary">
-                <Check size={40} strokeWidth={3} />
+              {/* Subtly shimmering background ambient lights inside the card */}
+              <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-brand-primary/10 blur-3xl" />
+              <div className="absolute -left-12 -bottom-12 h-40 w-40 rounded-full bg-brand-secondary/10 blur-3xl" />
+
+              {/* Premium 3D Animation block */}
+              <div className="relative mx-auto mb-8 flex h-40 w-40 items-center justify-center select-none" style={{ perspective: 1000 }}>
+                {/* Orbit path 1: Large light ring */}
+                <motion.div
+                  className="absolute inset-2 rounded-full border border-dashed border-brand-primary/30"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+                />
+                {/* Orbit path 2: Medium quick ring rotating opposite */}
+                <motion.div
+                  className="absolute inset-6 rounded-full border border-double border-brand-secondary/40"
+                  animate={{ rotate: -360 }}
+                  transition={{ duration: 7, repeat: Infinity, ease: "linear" }}
+                />
+                
+                {/* Beautiful Center coin rotating in 3D */}
+                <motion.div
+                  className="absolute h-22 w-22 rounded-full bg-gradient-to-tr from-brand-primary via-emerald-400 to-brand-secondary p-[3px] shadow-[0_20px_40px_rgba(34,197,94,0.35)] flex items-center justify-center"
+                  style={{ transformStyle: 'preserve-3d' }}
+                  animate={{ 
+                    rotateY: [0, 180, 360],
+                    rotateX: [0, 25, 0, -25, 0],
+                    y: [0, -6, 0]
+                  }}
+                  transition={{ 
+                    duration: 4, 
+                    repeat: Infinity, 
+                    ease: "easeInOut" 
+                  }}
+                >
+                  {/* Front/Back of the spinning badge */}
+                  <div className="h-full w-full rounded-full bg-slate-900 flex flex-col items-center justify-center p-1" style={{ transform: 'translateZ(12px)', backfaceVisibility: 'hidden' }}>
+                    <Check size={32} className="text-white drop-shadow-[0_2px_8px_rgba(34,197,94,0.8)]" strokeWidth={4} />
+                  </div>
+                </motion.div>
+
+                {/* Orbiting particle 1 */}
+                <motion.div
+                  className="absolute h-3 w-3 rounded-full bg-emerald-500 shadow-[0_0_12px_#10b981]"
+                  animate={{
+                    x: [0, 60, 0, -60, 0],
+                    y: [-60, 0, 60, 0, -60],
+                    scale: [1, 1.3, 0.8, 1.3, 1]
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                />
+
+                {/* Orbiting particle 2 */}
+                <motion.div
+                  className="absolute h-2 w-2 rounded-full bg-brand-secondary shadow-[0_0_8px_#22c55e]"
+                  animate={{
+                    x: [0, -48, 0, 48, 0],
+                    y: [48, 0, -48, 0, 48],
+                    scale: [0.8, 1.2, 0.7, 1.2, 0.8]
+                  }}
+                  transition={{
+                    duration: 2.2,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                />
               </div>
-              <h2 className="text-3xl font-black text-slate-900">Success!</h2>
-              <p className="mt-4 font-bold text-slate-500">
-                {mode === 'login' ? 'Welcome back! Redirecting to your dashboard...' : 'Your account has been created successfully! Redirecting...'}
-              </p>
-              <div className="mt-8 flex justify-center">
-                <div className="h-1.5 w-32 overflow-hidden rounded-full bg-slate-100">
+
+              {/* Title & description matching user's selected role */}
+              <div style={{ transform: 'translateZ(20px)' }}>
+                <motion.h2 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 }}
+                  className="text-3xl font-black tracking-tight text-slate-900"
+                >
+                  Access Granted
+                </motion.h2>
+                
+                <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.25 }}
+                  className="mt-3 text-sm font-bold text-slate-500 max-w-xs mx-auto leading-relaxed"
+                >
+                  {mode === 'login' ? 'Securing safe handshake with your campus dashboard...' : 'Account successfully synthesized. Initializing workspace...'}
+                </motion.p>
+              </div>
+
+              {/* Interactive progressive flow bar */}
+              <div className="mt-8 flex flex-col items-center justify-center gap-2" style={{ transform: 'translateZ(10px)' }}>
+                <div className="h-1.5 w-48 overflow-hidden rounded-full bg-slate-100 p-[1px] border border-slate-100">
                   <motion.div 
                     initial={{ width: 0 }}
                     animate={{ width: "100%" }}
-                    transition={{ duration: 1.5 }}
-                    className="h-full bg-brand-primary"
+                    transition={{ duration: 1.5, ease: "easeInOut" }}
+                    className="h-full rounded-full bg-gradient-to-r from-brand-primary to-brand-secondary"
                   />
                 </div>
+                <span className="text-[10px] font-black uppercase tracking-[0.25em] text-emerald-600/80 animate-pulse mt-1">Syncing Session...</span>
               </div>
             </motion.div>
           </motion.div>

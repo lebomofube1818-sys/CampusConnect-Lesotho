@@ -10,6 +10,8 @@ import Auth from './pages/Auth';
 import CreateRequest from './pages/CreateRequest';
 import StudentDashboard from './pages/StudentDashboard';
 import VendorDashboard from './pages/VendorDashboard';
+import SubmittedOffers from './pages/SubmittedOffers';
+import Profile from './pages/Profile';
 import { useAuthStore } from './store/authStore';
 import LoadingScreen from './components/ui/LoadingScreen';
 import FavoritesSheet from './components/ui/FavoritesSheet';
@@ -78,6 +80,22 @@ export default function App() {
                     element={
                       <ProtectedRoute>
                         <CreateRequest />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/submitted-offers" 
+                    element={
+                      <ProtectedRoute>
+                        <SubmittedOffers />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/profile" 
+                    element={
+                      <ProtectedRoute>
+                        <Profile />
                       </ProtectedRoute>
                     } 
                   />
