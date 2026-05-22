@@ -180,7 +180,7 @@ const Home: React.FC = () => {
             className="transform-gpu transition-shadow duration-500 hover:drop-shadow-[0_20px_40px_rgba(0,0,0,0.15)]"
           >
             <div className="mb-6 flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold text-green-100 backdrop-blur-md">
-              <span>THE BIG STUDENT SWAP • COMING SOON!!</span>
+              <span>THE BIG STUDENT SWAP • COMING SOON LISTINGS</span>
             </div>
             <h1 className="mb-6 text-4xl font-black tracking-tight sm:text-7xl">
               Buy, Sell, <br /> & Connect.
@@ -291,85 +291,7 @@ const Home: React.FC = () => {
       </section>
 
 
-      {/* Categories Grid */}
-      <section id="categories-section" className="py-24 lg:py-32">
-        <div className="mb-16 flex flex-col items-center justify-between gap-8 md:flex-row md:items-end">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-          >
-            <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-brand-primary">
-              <span className="h-1 w-8 bg-brand-primary rounded-full" /> Popular Now
-            </div>
-            <h2 className="text-4xl font-[900] tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
-              Browse <span className="text-brand-primary underline decoration-brand-primary/20 decoration-8 underline-offset-8">Categories</span>
-            </h2>
-            <p className="mt-4 text-slate-500 font-medium text-lg max-w-md">
-              Discover everything from textbooks to tech, curated for the campus lifestyle.
-            </p>
-          </motion.div>
-          
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="flex flex-wrap gap-4"
-          >
-            <Link to={user ? "/create-request" : "/login"} className="group flex items-center gap-3 overflow-hidden rounded-2xl bg-slate-900 px-8 py-5 text-sm font-black text-white transition-all hover:bg-brand-primary hover:shadow-[0_20px_40px_-10px_rgba(34,197,94,0.3)] active:scale-95">
-              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-white/10 text-white transition-colors group-hover:bg-white group-hover:text-brand-primary">
-                <Plus size={16} strokeWidth={3} />
-              </div>
-              <span className="tracking-tight">Post Your Request</span>
-            </Link>
-          </motion.div>
-        </div>
 
-        <motion.div 
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={{
-            hidden: { opacity: 0 },
-            show: {
-              opacity: 1,
-              transition: { staggerChildren: 0.1 }
-            }
-          }}
-          className="grid grid-cols-2 gap-4 sm:gap-8 lg:grid-cols-4"
-        >
-          {categories.map((cat) => (
-            <motion.div
-              key={cat.name}
-              variants={{
-                hidden: { opacity: 0, y: 20 },
-                show: { opacity: 1, y: 0 }
-              }}
-            >
-              <Link 
-                to="/categories"
-                className={`group relative flex flex-col justify-between overflow-hidden rounded-[2.5rem] border-2 ${cat.border} ${cat.color} aspect-square p-8 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-slate-200`}
-              >
-                <div className="relative z-10">
-                  <div className="mb-4 flex text-5xl transition-transform duration-500 group-hover:scale-125 group-hover:rotate-6">
-                    {cat.emoji}
-                  </div>
-                  <h3 className="text-2xl font-black tracking-tight leading-none mb-1">{cat.name}</h3>
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-60">{cat.count} listings</p>
-                </div>
-
-                <div className="relative z-10 flex items-center gap-2 text-xs font-black uppercase tracking-wider opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-1">
-                  {cat.name === 'Explore All' ? 'View All' : 'Browse Now'} <ArrowRight size={14} />
-                </div>
-
-                {/* Abstract decorative circles */}
-                <div className={`absolute -right-10 -bottom-10 h-32 w-32 rounded-full opacity-10 blur-2xl transition-all duration-700 group-hover:scale-150 group-hover:opacity-20 ${cat.accent}`}></div>
-                <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent"></div>
-              </Link>
-            </motion.div>
-          ))}
-        </motion.div>
-      </section>
     </div>
   );
 };

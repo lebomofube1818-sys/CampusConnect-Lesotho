@@ -1,79 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Store,
+  Briefcase, 
   MapPin, 
-  Star, 
-  ShieldCheck, 
-  Plus, 
-  Sparkles, 
-  Tag, 
-  GraduationCap,
-  MessageSquare,
-  TrendingUp,
-  Briefcase,
-  Layers,
-  CheckCircle,
+  Clock, 
+  Search, 
+  Trash2, 
+  AlertCircle, 
+  TrendingUp, 
+  CheckCircle, 
   X,
   Send,
-  Trash2,
-  AlertCircle,
-  Clock,
-  Filter
+  Sparkles,
+  Tag,
+  ArrowRight
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
-// Initial Mock products/deals for this vendor
-const INITIAL_VENDOR_DEALS = [
-  {
-    id: 'deal-v1-1',
-    title: 'Original HP/Lenovo 65W Type-C Charger',
-    price: 380,
-    category: 'Electronics',
-    stock: 5,
-    campus: 'Roma & Maseru',
-    image: 'https://images.unsplash.com/photo-1592375601764-5dd6be510ad8?auto=format&fit=crop&q=80&w=300&h=200',
-    description: 'Highly durable replacement chargers with standard 6-month campus warranty.'
-  },
-  {
-    id: 'deal-v1-2',
-    title: 'Speedy C++ & JS Lab Tutoring [Per Hour]',
-    price: 80,
-    category: 'Services',
-    stock: 'Flexible',
-    campus: 'NUL Roma',
-    image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=300&h=200',
-    description: 'Get help with software engineering labs, data structures, and debugging.'
-  }
-];
-
-const CAMPUS_OPTIONS = [
-  { id: 'NUL', name: 'National University of Lesotho (NUL)', campus: 'Roma' },
-  { id: 'LUCT', name: 'Limkokwing University (LUCT)', campus: 'Maseru' },
-  { id: 'LCE', name: 'Lesotho College of Education (LCE)', campus: 'Leribe' },
-  { id: 'Lerotholi', name: 'Lerotholi Polytechnic', campus: 'Maseru' },
-  { id: 'CAS', name: 'Centre for Accounting Studies (CAS)', campus: 'Maseru' },
-];
-
-const CATEGORIES = ['Electronics', 'Food', 'Books', 'Handmade', 'Services', 'Clothing'];
-
-const VendorDashboard: React.FC = () => {
+const SubmittedOffers: React.FC = () => {
   const { user } = useAuthStore();
-  const [deals, setDeals] = useState<any[]>(() => {
-    const saved = localStorage.getItem(`vendor_deals_${user?.uid || 'default'}`);
-    return saved ? JSON.parse(saved) : INITIAL_VENDOR_DEALS;
-  });
-
   const [proposals, setProposals] = useState<any[]>(() => {
-    const saved = localStorage.getItem(`vendor_proposals_${user?.uid || 'default'}`);
+    const saved = localStorage.getItem('client_shared_proposals');
     return saved ? JSON.parse(saved) : [
       {
-        id: 'prop-1',
-        requestId: 'req-l2', // Urgency item
+        id: 'prop-fallback-l2-1',
+        requestId: 'req-l2',
         requestTitle: 'HP Pavilion Laptop Charger (65W)',
         studentName: 'Thabo Mokoena',
         proposedPrice: 380,
+        vendorName: 'Roma Tech Hub',
+        vendorPhone: '+266 5890 1234',
+        vendorRating: 4.9,
         message: 'Greetings! I have the original 65W blue-tip replacement charger in stock right now at Roma Tech Hub. Let me know when you want to pick it up.',
+        status: 'pending',
+        timestamp: new Date().toISOString()
+      },
+      {
+        id: 'prop-fallback-l1-1',
+        requestId: 'req-l1',
+        requestTitle: 'Macroeconomics 101 Textbook',
+        studentName: 'Mpuleng Tseoa',
+        proposedPrice: 300,
+        vendorName: 'CAS Books & Supplies',
+        vendorPhone: '+266 5971 8820',
+        vendorRating: 4.9,
+        message: 'Hi, I have a very clean, unmarked copy of this Macroeconomics textbook. Ready to bring it to your room in Maseru campus or meet near CAS.',
         status: 'pending',
         timestamp: new Date().toISOString()
       }
@@ -81,174 +52,84 @@ const VendorDashboard: React.FC = () => {
   });
 
   const [studentRequests, setStudentRequests] = useState<any[]>([]);
-  const [selectedReqForProposal, setSelectedReqForProposal] = useState<any | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'accepted' | 'declined'>('all');
   
-  // Dynamic metrics
-  const [totalSales, setTotalSales] = useState(() => {
-    return Number(localStorage.getItem(`vendor_sales_${user?.uid || 'default'}`) || '1140');
-  });
-
-  // Filters for student needs
-  const [filterCampus, setFilterCampus] = useState<string>('all');
-  const [filterCategory, setFilterCategory] = useState<string>('all');
-
-  // Form states
-  const [showAddDealModal, setShowAddDealModal] = useState(false);
-  const [newDealTitle, setNewDealTitle] = useState('');
-  const [newDealPrice, setNewDealPrice] = useState('');
-  const [newDealCategory, setNewDealCategory] = useState('Electronics');
-  const [newDealStock, setNewDealStock] = useState('5');
-  const [newDealCampus, setNewDealCampus] = useState('Roma');
-  const [newDealDesc, setNewDealDesc] = useState('');
-  const [newDealImg, setNewDealImg] = useState('');
-
-  // Proposal modal input state
-  const [proposalPrice, setProposalPrice] = useState('');
-  const [proposalMsg, setProposalMsg] = useState('');
+  // Revise proposal modal state
+  const [editingProposal, setEditingProposal] = useState<any | null>(null);
+  const [revisedPrice, setRevisedPrice] = useState('');
+  const [revisedMsg, setRevisedMsg] = useState('');
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' });
-    loadStudentRequests();
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem(`vendor_deals_${user?.uid || 'default'}`, JSON.stringify(deals));
-  }, [deals, user]);
-
-  useEffect(() => {
-    localStorage.setItem(`vendor_proposals_${user?.uid || 'default'}`, JSON.stringify(proposals));
-  }, [proposals, user]);
-
-  const loadStudentRequests = () => {
     const local = localStorage.getItem('client_student_requests');
     if (local) {
       setStudentRequests(JSON.parse(local));
-    } else {
-      // Default fallback student requests for NUL/LUCT
-      const defaultRequests = [
-        {
-          id: 'req-l1',
-          item: 'Macroeconomics 101 Textbook',
-          category: 'Books',
-          budget: '320',
-          description: 'Looking for a clean copy of the prescribed Macroeconomics textbook. No torn pages or heavy highlights.',
-          student: 'Mpuleng Tseoa',
-          studentUid: 'student-mpuleng',
-          campus: 'Roma',
-          postedAt: '2 days ago',
-          urgency: 'Needed Soon',
-          status: 'open',
-          timestamp: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString()
-        },
-        {
-          id: 'req-l2',
-          item: 'HP Pavilion Laptop Charger (65W)',
-          category: 'Electronics',
-          budget: '450',
-          description: 'Urgent! My charger short-circuited and I need a replacement immediately to complete my software lab assignment due tomorrow.',
-          student: 'Thabo Mokoena',
-          studentUid: 'student-thabo',
-          campus: 'Roma',
-          postedAt: '5 hours ago',
-          urgency: 'Urgent',
-          status: 'urgent',
-          timestamp: new Date(Date.now() - 5 * 3600 * 1000).toISOString()
-        },
-        {
-          id: 'req-l3',
-          item: 'Custom Graduation Varsity Jacket',
-          category: 'Handmade',
-          budget: '600',
-          description: 'We need customized outerwear customized with LUCT badge embroidery for a student organization of 10 members.',
-          student: 'Khotso Molapo',
-          studentUid: 'student-khotso',
-          campus: 'Maseru',
-          postedAt: '12 hours ago',
-          urgency: 'Needed Soon',
-          status: 'open',
-          timestamp: new Date(Date.now() - 12 * 3600 * 1000).toISOString()
-        }
-      ];
-      localStorage.setItem('client_student_requests', JSON.stringify(defaultRequests));
-      setStudentRequests(defaultRequests);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('client_shared_proposals', JSON.stringify(proposals));
+  }, [proposals, user]);
+
+  const handleWithdrawProposal = (id: string) => {
+    const confirmation = window.confirm('Are you sure you want to withdraw this pitch/offer?');
+    if (confirmation) {
+      setProposals(proposals.filter(p => p.id !== id));
     }
   };
 
-  const handleCreateDeal = (e: React.FormEvent) => {
+  const handleOpenEditProposal = (p: any) => {
+    setEditingProposal(p);
+    setRevisedPrice(String(p.proposedPrice));
+    setRevisedMsg(p.message);
+  };
+
+  const handleUpdateProposalValue = (e: React.FormEvent) => {
     e.preventDefault();
-    const mockImages = [
-      'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&q=80&w=300&h=200',
-      'https://images.unsplash.com/photo-1496181130204-7552aa1554da?auto=format&fit=crop&q=80&w=300&h=200',
-      'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=300&h=200',
-      'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&q=80&w=300&h=200',
-    ];
-    const imageToUse = newDealImg || mockImages[Math.floor(Math.random() * mockImages.length)];
+    if (!editingProposal) return;
 
-    const deal = {
-      id: `deal-usr-${Date.now()}`,
-      title: newDealTitle,
-      price: parseFloat(newDealPrice) || 0,
-      category: newDealCategory,
-      stock: newDealStock || 'Flexible',
-      campus: newDealCampus,
-      image: imageToUse,
-      description: newDealDesc
-    };
+    setProposals(proposals.map(p => {
+      if (p.id === editingProposal.id) {
+        return {
+          ...p,
+          proposedPrice: parseFloat(revisedPrice) || p.proposedPrice,
+          message: revisedMsg,
+          timestamp: new Date().toISOString()
+        };
+      }
+      return p;
+    }));
 
-    setDeals([deal, ...deals]);
-    setShowAddDealModal(false);
+    setEditingProposal(null);
+  };
+
+  const handleSimulateStudentStatus = (id: string, newStatus: 'accepted' | 'declined' | 'pending') => {
+    setProposals(proposals.map(p => {
+      if (p.id === id) {
+        return { ...p, status: newStatus };
+      }
+      return p;
+    }));
+  };
+
+  // Metrics calculations
+  const totalBids = proposals.length;
+  const acceptedBids = proposals.filter(p => p.status === 'accepted').length;
+  const pendingBids = proposals.filter(p => p.status === 'pending').length;
+  const projectedRevenue = proposals
+    .filter(p => p.status === 'accepted')
+    .reduce((sum, p) => sum + (p.proposedPrice || 0), 0);
+
+  // Filter proposals
+  const filteredProposals = proposals.filter(p => {
+    const matchesSearch = 
+      p.requestTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.studentName.toLowerCase().includes(searchQuery.toLowerCase());
     
-    // reset form states
-    setNewDealTitle('');
-    setNewDealPrice('');
-    setNewDealCategory('Electronics');
-    setNewDealStock('5');
-    setNewDealCampus('Roma');
-    setNewDealDesc('');
-    setNewDealImg('');
-  };
-
-  const handleDeleteDeal = (id: string) => {
-    setDeals(deals.filter(d => d.id !== id));
-  };
-
-  const handleOpenProposalModal = (req: any) => {
-    setSelectedReqForProposal(req);
-    setProposalPrice(req.budget);
-    setProposalMsg(`Greetings ${req.student}! I can definitely assist you with your request for "${req.item}". `);
-  };
-
-  const handleSubmitProposal = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedReqForProposal) return;
-
-    const newProp = {
-      id: `prop-usr-${Date.now()}`,
-      requestId: selectedReqForProposal.id,
-      requestTitle: selectedReqForProposal.item,
-      studentName: selectedReqForProposal.student,
-      proposedPrice: parseFloat(proposalPrice) || 0,
-      message: proposalMsg,
-      status: 'pending',
-      timestamp: new Date().toISOString()
-    };
-
-    setProposals([newProp, ...proposals]);
-    setSelectedReqForProposal(null);
-    setProposalPrice('');
-    setProposalMsg('');
-  };
-
-  const handleCancelProposal = (id: string) => {
-    setProposals(proposals.filter(p => p.id !== id));
-  };
-
-  // Filter requests based on inputs
-  const filteredRequests = studentRequests.filter(req => {
-    if (req.status === 'resolved') return false; // Hide resolved requests in vendor active feed
-    const matchesCampus = filterCampus === 'all' || req.campus.toLowerCase().includes(filterCampus.toLowerCase());
-    const matchesCategory = filterCategory === 'all' || req.category.toLowerCase() === filterCategory.toLowerCase();
-    return matchesCampus && matchesCategory;
+    const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
   });
 
   return (
@@ -256,430 +137,253 @@ const VendorDashboard: React.FC = () => {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* Header Hero Area */}
-        <div className="mb-12 flex flex-col justify-between gap-6 md:flex-row md:items-end">
+        <div className="mb-12">
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between"
           >
-            <div className="mb-3 flex items-center gap-2">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-primary/10 text-brand-primary">
-                <ShieldCheck size={14} />
-              </span>
-              <span className="text-xs font-black uppercase tracking-[0.2em] text-brand-primary">
-                Verified Seller Studio
-              </span>
+            <div>
+              <div className="mb-3 flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-primary/10 text-brand-primary">
+                  <Briefcase size={14} />
+                </span>
+                <span className="text-xs font-black uppercase tracking-[0.2em] text-brand-primary">
+                  Interactive Pitch Hub
+                </span>
+              </div>
+              <h1 className="text-4xl font-black tracking-tight text-slate-900 sm:text-5xl">
+                Sale & <span className="text-brand-primary">Offers Submitted</span>
+              </h1>
+              <p className="mt-3 text-lg font-medium text-slate-500">
+                Track status updates, modify active price quotes, and connect with students who requested items.
+              </p>
             </div>
-            <h1 className="text-4xl font-black tracking-tight text-slate-900 sm:text-5xl">
-              Merchant <span className="text-brand-primary">Console</span>
-            </h1>
-            <p className="mt-3 text-lg font-medium text-slate-500">
-              Welcome, <strong className="text-slate-800">{user?.displayName || 'Partner Vendor'}</strong>! Drive campus deals and pitch on genuine student needs.
-            </p>
           </motion.div>
-
-          {/* Add Deals Quick CTA */}
-          <div className="flex gap-3">
-            <button 
-              onClick={() => setShowAddDealModal(true)}
-              className="flex items-center gap-2 rounded-2xl bg-slate-900 px-6 py-4 text-sm font-black text-white shadow-xl transition-all hover:bg-slate-800 active:scale-95"
-            >
-              <Plus size={18} /> Post a Live Deal
-            </button>
-          </div>
         </div>
 
-        {/* Sales & Merchant Metric Badges */}
-        <div className="mb-12 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        {/* Live Metrics Grid */}
+        <div className="mb-10 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+          <div className="rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-sm border border-slate-100 flex flex-col justify-between">
+            <div className="flex items-center justify-between sm:flex-col sm:items-start gap-2">
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-blue-50 text-blue-600">
+                <Send size={16} className="sm:w-5 sm:h-5" />
+              </div>
+              <h3 className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-wider leading-none">Total Pitches</h3>
+            </div>
+            <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-2">{totalBids}</p>
+          </div>
+
+          <div className="rounded-2xl sm:rounded-3xl bg-emerald-55/40 bg-emerald-50 p-4 sm:p-6 shadow-sm border border-emerald-100 flex flex-col justify-between">
+            <div className="flex items-center justify-between sm:flex-col sm:items-start gap-2">
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-emerald-100 text-brand-primary">
+                <CheckCircle size={16} className="sm:w-5 sm:h-5" />
+              </div>
+              <h3 className="text-[10px] sm:text-xs font-black text-brand-primary uppercase tracking-wider leading-none">Accepted</h3>
+            </div>
+            <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-2">{acceptedBids}</p>
+          </div>
+
+          <div className="rounded-2xl sm:rounded-3xl bg-amber-50 p-4 sm:p-6 shadow-sm border border-amber-100/60 flex flex-col justify-between">
+            <div className="flex items-center justify-between sm:flex-col sm:items-start gap-2">
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-amber-100 text-amber-600">
+                <Clock size={16} className="sm:w-5 sm:h-5" />
+              </div>
+              <h3 className="text-[10px] sm:text-xs font-black text-amber-700 uppercase tracking-wider leading-none">Pending Feed</h3>
+            </div>
+            <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-2">{pendingBids}</p>
+          </div>
+
           <div className="rounded-2xl sm:rounded-3xl bg-lime-50/80 p-4 sm:p-6 shadow-sm border border-lime-200/50 flex flex-col justify-between">
             <div className="flex items-center justify-between sm:flex-col sm:items-start gap-2">
               <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-lime-100 text-lime-700 select-none">
                 <span className="text-xs sm:text-sm font-black font-mono">M</span>
               </div>
-              <h3 className="text-[10px] sm:text-[11px] font-black text-lime-800 uppercase tracking-widest leading-none">Gross Sales</h3>
+              <h3 className="text-[10px] sm:text-xs font-black text-lime-800 uppercase tracking-wider leading-none">Booked Cash</h3>
             </div>
-            <p className="text-2xl sm:text-3xl font-black text-lime-950 mt-2">
-              M{totalSales}
-            </p>
-          </div>
-          
-          <div className="rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-sm border border-slate-100 flex flex-col justify-between">
-            <div className="flex items-center justify-between sm:flex-col sm:items-start gap-2">
-              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-blue-50 text-blue-600">
-                <Layers size={16} className="sm:w-5 sm:h-5" />
-              </div>
-              <h3 className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none">Active Deals</h3>
-            </div>
-            <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-2">{deals.length}</p>
-          </div>
-
-          <div className="rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-sm border border-slate-100 flex flex-col justify-between">
-            <div className="flex items-center justify-between sm:flex-col sm:items-start gap-2">
-              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-emerald-50 text-brand-primary">
-                <Briefcase size={16} className="sm:w-5 sm:h-5" />
-              </div>
-              <h3 className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none">Pitches Sent</h3>
-            </div>
-            <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-2">{proposals.length}</p>
-          </div>
-
-          <div className="rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-sm border border-slate-100 flex flex-col justify-between">
-            <div className="flex items-center justify-between sm:flex-col sm:items-start gap-2">
-              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-amber-50 text-amber-600 font-bold">
-                <Star size={16} className="sm:w-5 sm:h-5" fill="currentColor" />
-              </div>
-              <h3 className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none">Trust Score</h3>
-            </div>
-            <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-2">4.9 <span className="text-xs font-bold text-slate-400">/ 5.0</span></p>
+            <p className="text-2xl sm:text-3xl font-black text-lime-950 mt-2">M{projectedRevenue}</p>
           </div>
         </div>
 
-        {/* Main Workspaces Layout (Split Screens) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-          
-          {/* LEFT: STUDENT REQ FEED (Proposals Arena) - 7 cols */}
-          <div className="lg:col-span-7 space-y-8">
-            <div className="border border-slate-100/80 bg-white rounded-[2.5rem] p-6 sm:p-8 shadow-md">
-              <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                <div>
-                  <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-                   Live Student <span className="text-brand-primary">Requests</span>
-                  </h2>
-                  <p className="text-xs font-bold text-slate-500 mt-1">
-                    Authentic needs posted by Lesotho university students. Pitch directly to secure orders!
-                  </p>
-                </div>
-                
-                {/* Refresh CTA */}
-                <button 
-                  onClick={loadStudentRequests}
-                  className="rounded-xl px-4 py-2 border border-slate-100 hover:bg-slate-55 bg-slate-50 text-[10px] font-black uppercase tracking-wider text-slate-600 hover:bg-slate-100 active:scale-95"
-                >
-                  Sync Needs
-                </button>
-              </div>
+        {/* Filters and Search toolbar */}
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
+          <div className="relative flex-1">
+            <Search className="absolute left-4.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+            <input 
+              type="text" 
+              placeholder="Search by student display name or requested item..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-2xl bg-slate-50 border border-slate-100/80 pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-brand-primary"
+            />
+          </div>
 
-              {/* Feed Filters */}
-              <div className="grid grid-cols-2 gap-4 mb-6 bg-slate-50 p-4 rounded-3xl">
-                <div>
-                  <label className="text-[9px] font-black uppercase tracking-wider text-slate-400 ml-1 block mb-1.5 flex items-center gap-1">
-                    <MapPin size={10} /> Campus
-                  </label>
-                  <select
-                    value={filterCampus}
-                    onChange={(e) => setFilterCampus(e.target.value)}
-                    className="w-full rounded-xl bg-white px-3 py-2 text-xs font-bold border border-slate-200 focus:outline-none focus:border-brand-primary cursor-pointer"
-                  >
-                    <option value="all">Every Campus</option>
-                    <option value="Roma">Roma (NUL)</option>
-                    <option value="Maseru">Maseru (LUCT, CAS, Lerotholi)</option>
-                    <option value="Leribe">Leribe (LCE)</option>
-                  </select>
-                </div>
+          <div className="flex flex-wrap gap-1.5 font-sans">
+            {(['all', 'pending', 'accepted', 'declined'] as const).map(f => (
+              <button
+                key={f}
+                onClick={() => setStatusFilter(f)}
+                className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all select-none capitalize ${
+                  statusFilter === f 
+                    ? 'bg-slate-900 text-white' 
+                    : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'
+                }`}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+        </div>
 
-                <div>
-                  <label className="text-[9px] font-black uppercase tracking-wider text-slate-400 ml-1 block mb-1.5 flex items-center gap-1">
-                    <Filter size={10} /> Category
-                  </label>
-                  <select
-                    value={filterCategory}
-                    onChange={(e) => setFilterCategory(e.target.value)}
-                    className="w-full rounded-xl bg-white px-3 py-2 text-xs font-bold border border-slate-200 focus:outline-none focus:border-brand-primary cursor-pointer"
-                  >
-                    <option value="all">All Specialties</option>
-                    {CATEGORIES.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Request Feed Items */}
-              {filteredRequests.length === 0 ? (
-                <div className="py-12 text-center rounded-3xl border-2 border-dashed border-slate-100 bg-slate-50/50">
-                  <AlertCircle className="mx-auto text-slate-300 mb-2" size={32} />
-                  <p className="text-sm font-black text-slate-400">No active requests matching filters on school boards.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-1 xl:grid-cols-2">
-                  {filteredRequests.map(req => {
-                    const alreadyProposed = proposals.some(p => p.requestId === req.id);
-                    return (
-                      <div 
-                        key={req.id}
-                        className={`p-3.5 sm:p-5 rounded-2xl sm:rounded-[2rem] border transition-all duration-300 hover:shadow-md ${
-                          req.status === 'urgent' 
-                            ? 'bg-rose-50/20 border-rose-100 ring-1 ring-rose-50' 
-                            : 'bg-white border-slate-100 hover:border-slate-200'
-                        }`}
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-2 gap-1.5">
-                          <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-                            <span className={`px-1.5 sm:px-2.5 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-wider ${
-                              req.status === 'urgent' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-brand-primary'
-                            }`}>
-                              {req.urgency}
-                            </span>
-                            <span className="bg-slate-50 border border-slate-100 rounded-full px-1.5 sm:px-2.5 py-0.5 text-[8px] sm:text-[9px] font-bold text-slate-500 truncate max-w-[80px] sm:max-w-none">
-                              {req.campus}
-                            </span>
-                          </div>
-                          <span className="text-sm sm:text-lg font-black text-brand-primary font-mono select-none">
-                            M{req.budget}
-                          </span>
-                        </div>
-
-                        <h3 className="text-xs sm:text-base font-black text-slate-900 mb-1 line-clamp-1">{req.item}</h3>
-                        <p className="text-[10px] sm:text-xs font-medium text-slate-500 leading-snug sm:leading-relaxed mb-3 sm:mb-4 line-clamp-2 md:line-clamp-none">
-                          "{req.description}"
-                        </p>
-
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-2.5 sm:pt-3.5 border-t border-slate-100/60 font-mono gap-2 mt-auto">
-                          <span className="text-[8px] sm:text-[10px] font-bold text-slate-400 truncate">
-                            By {req.student} • {req.postedAt || 'Recently'}
-                          </span>
-                          
-                          {alreadyProposed ? (
-                            <span className="inline-flex self-start sm:self-auto items-center gap-1 rounded-lg sm:rounded-xl bg-orange-50 px-2 sm:px-3.5 py-1 sm:py-1.5 text-[8px] sm:text-[10px] font-black uppercase tracking-wider text-orange-600 border border-orange-100">
-                              Pitch Sent
-                            </span>
-                          ) : (
-                            <button
-                              onClick={() => handleOpenProposalModal(req)}
-                              className="group flex self-start sm:self-auto items-center gap-1 rounded-lg sm:rounded-xl bg-brand-primary hover:bg-emerald-600 px-2 sm:px-3.5 py-1 sm:py-1.5 text-[8px] sm:text-[10px] font-black uppercase tracking-wider text-white transition-all select-none active:scale-95 cursor-pointer"
-                            >
-                              Pitch <span className="hidden sm:inline">Deal</span> <Send size={8} className="sm:w-2.5 sm:h-2.5 transition-transform group-hover:translate-x-0.5" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+        {/* Pitches List Content Area */}
+        {filteredProposals.length === 0 ? (
+          <div className="py-20 text-center rounded-[2.5rem] bg-white border border-slate-100 shadow-sm flex flex-col items-center justify-center px-4">
+            <div className="h-16 w-16 bg-slate-50 text-slate-300 rounded-2xl flex items-center justify-center mb-4">
+              <AlertCircle size={32} />
             </div>
+            <h3 className="text-xl font-black text-slate-800">No proposals match your search</h3>
+            <p className="text-sm font-medium text-slate-400 max-w-sm mt-1">
+              Either search under different criteria or pitch a new deal from the active student requests feed boards.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            {filteredProposals.map((prop, idx) => {
+              // Try to find matching original student request for additional category/context
+              const relatedReq = studentRequests.find(r => r.id === prop.requestId);
+              const formattedDate = new Date(prop.timestamp).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              });
 
-            {/* SEND PROPOSALS LIST */}
-            <div className="border border-slate-100/80 bg-white rounded-[2.5rem] p-6 sm:p-8 shadow-md">
-              <h2 className="text-xl font-black text-slate-900 mb-2">
-                My Sales <span className="text-brand-primary">Pitches & Offers</span>
-              </h2>
-              <p className="text-xs font-bold text-slate-500 mb-6">
-                History of pitches made directly to students on target items.
-              </p>
+              return (
+                <motion.div
+                  key={prop.id}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className={`relative flex flex-col overflow-hidden rounded-[2.5rem] bg-white p-6 sm:p-7 shadow-sm border transition-all ${
+                    prop.status === 'accepted' 
+                      ? 'border-emerald-200 bg-emerald-50/10' 
+                      : prop.status === 'declined'
+                        ? 'border-slate-100 opacity-75'
+                        : 'border-slate-100 hover:shadow-md'
+                  }`}
+                >
+                  {/* Status & Price Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-wider ${
+                      prop.status === 'accepted'
+                        ? 'bg-emerald-50 text-brand-primary border border-emerald-100'
+                        : prop.status === 'declined'
+                          ? 'bg-slate-100 text-slate-400'
+                          : 'bg-amber-50 text-amber-600 border border-amber-100'
+                    }`}>
+                      {prop.status === 'accepted' ? '✓ Agreement Formed' : prop.status === 'declined' ? 'Closed' : '⏱ Pitch Pending'}
+                    </span>
+                    <div className="text-right">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none">Your Quote</span>
+                      <span className="text-2xl font-black text-brand-primary font-mono select-none block mt-1">M{prop.proposedPrice}</span>
+                    </div>
+                  </div>
 
-              {proposals.length === 0 ? (
-                <div className="p-8 text-center rounded-3xl border-2 border-dashed border-slate-100 bg-slate-50/50">
-                  <p className="text-xs font-bold text-slate-400">No pitches have been made yet.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {proposals.map(p => (
-                    <div key={p.id} className="p-5 rounded-3xl bg-slate-50 border border-slate-100">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 block mb-1">Proposed on:</span>
-                          <h4 className="text-sm font-black text-slate-900 leading-tight">{p.requestTitle}</h4>
-                        </div>
-                        <span className="text-sm font-black text-emerald-700 font-mono bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-100">
-                          M{p.proposedPrice}
+                  {/* Requested Item Block */}
+                  <div className="mb-4">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Requested Item</span>
+                    <h3 className="text-base font-black text-slate-900 leading-tight flex items-center gap-1.5 mt-0.5">
+                      <Tag size={14} className="text-slate-400 shrink-0" /> {prop.requestTitle}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-400 font-medium">
+                      <span className="bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-md font-mono">By {prop.studentName}</span>
+                      {relatedReq && (
+                        <span className="bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0">
+                          <MapPin size={10} /> {relatedReq.campus}
                         </span>
-                      </div>
-                      
-                      <p className="text-xs text-slate-600 font-medium italic mt-2 bg-white/70 backdrop-blur-sm p-3 rounded-2xl border border-slate-150 leading-relaxed">
-                        "{p.message}"
-                      </p>
+                      )}
+                    </div>
+                  </div>
 
-                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-200/50">
-                        <span className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-orange-600">
-                          <Clock size={12} /> Pending Response
-                        </span>
-                        
+                  {/* Letter / Msg Offer Text Description */}
+                  <div className="bg-slate-50/60 border border-slate-100/60 p-4 rounded-2xl mb-5 flex-1">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Direct Pitch Pitch Message</p>
+                    <p className="text-xs font-medium text-slate-600 leading-relaxed italic">
+                      "{prop.message}"
+                    </p>
+                    <div className="flex justify-between items-center mt-3 pt-2.5 border-t border-slate-200/30 text-[10px] text-slate-400 font-bold font-mono">
+                      <span className="flex items-center gap-1"><Clock size={10} /> Sent: {formattedDate}</span>
+                      {relatedReq && <span className="text-slate-400">Budget Limit: M{relatedReq.budget}</span>}
+                    </div>
+                  </div>
+
+                  {/* Simulation of interaction / Actions bottom bar */}
+                  <div className="flex flex-col gap-3.5 pt-4.5 border-t border-slate-100 mt-auto">
+                    {/* Simulator Action Drawer for testing */}
+                    <div className="flex items-center justify-between gap-2.5 bg-slate-50/50 p-2.5 rounded-xl border border-dashed border-slate-200 text-xs">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Response (Simulate)</span>
+                      <div className="flex gap-1">
                         <button
-                          onClick={() => handleCancelProposal(p.id)}
-                          className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-slate-400 hover:text-red-500 select-none transition-all"
+                          onClick={() => handleSimulateStudentStatus(prop.id, 'accepted')}
+                          className={`px-2 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg border transition-all select-none active:scale-95 ${
+                            prop.status === 'accepted' 
+                              ? 'bg-emerald-50 text-brand-primary border-emerald-100'
+                              : 'bg-white text-slate-500 hover:bg-slate-100'
+                          }`}
                         >
-                          Cancel Offer
+                          Agree
+                        </button>
+                        <button
+                          onClick={() => handleSimulateStudentStatus(prop.id, 'declined')}
+                          className={`px-2 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg border transition-all select-none active:scale-95 ${
+                            prop.status === 'declined' 
+                              ? 'bg-rose-50 text-rose-500 border-rose-100'
+                              : 'bg-white text-slate-500 hover:bg-slate-100'
+                          }`}
+                        >
+                          Decline
+                        </button>
+                        <button
+                          onClick={() => handleSimulateStudentStatus(prop.id, 'pending')}
+                          className={`px-2 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg border transition-all select-none active:scale-95 ${
+                            prop.status === 'pending' 
+                              ? 'bg-amber-50 text-amber-500 border-amber-100'
+                              : 'bg-white text-slate-500 hover:bg-slate-100'
+                          }`}
+                        >
+                          Reset
                         </button>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
 
-          {/* RIGHT: DEAL MANAGER / STORE FRONT / CATALOG - 5 cols */}
-          <div className="lg:col-span-12 xl:col-span-5 space-y-8">
-
-            {/* QUICK BRANDING PREVIEW CARD */}
-            <div className="relative overflow-hidden rounded-[2.5rem] bg-slate-950 p-8 text-white shadow-xl">
-              <div className="absolute top-0 right-0 h-40 w-40 rounded-full bg-brand-primary/10 blur-3xl"></div>
-              
-              <div className="flex items-center gap-3 mb-4">
-                <Store size={24} className="text-brand-primary" />
-                <h3 className="text-lg font-black tracking-tight">Active Micro-Store</h3>
-              </div>
-
-              <p className="text-xs leading-relaxed text-slate-400 mb-6 font-medium">
-                Your business, <strong className="text-white">{user?.displayName || 'Studio'}</strong>, is listed on the student store list with an active rating. Add campus locations to increase high-conversion student views.
-              </p>
-
-              <div className="space-y-2.5 border-t border-white/10 pt-4 text-xs font-mono">
-                <div className="flex justify-between">
-                  <span className="text-slate-500 uppercase tracking-widest text-[9px] font-bold">Seller Tier</span>
-                  <span className="text-slate-300">Verified Silver Class</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500 uppercase tracking-widest text-[9px] font-bold">Listed Active Areas</span>
-                  <span className="text-slate-300">Roma, Maseru Hub</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500 uppercase tracking-widest text-[9px] font-bold">Response Speed</span>
-                  <span className="text-brand-primary">‹ 1 hour average</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        {/* MODAL: ADD DEAL CARD */}
-        <AnimatePresence>
-          {showAddDealModal && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-md"
-            >
-              <motion.div
-                initial={{ scale: 0.94, y: 15 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.94, y: 15 }}
-                className="w-full max-w-lg rounded-[2.5rem] bg-white p-8 shadow-2xl overflow-y-auto max-h-[90vh] ring-1 ring-slate-100"
-              >
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-                    <Plus className="text-brand-primary" size={24} /> Post Stocked Deal
-                  </h3>
-                  <button 
-                    onClick={() => setShowAddDealModal(false)}
-                    className="p-1 rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-900 transition-all select-none"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-
-                <form onSubmit={handleCreateDeal} className="space-y-4">
-                  <div>
-                    <label className="text-xs font-black uppercase tracking-wider text-slate-400 ml-1">Product/Service Title</label>
-                    <input 
-                      required
-                      type="text"
-                      placeholder="e.g. Prescribed Financial Accounting 2nd Hand"
-                      value={newDealTitle}
-                      onChange={(e) => setNewDealTitle(e.target.value)}
-                      className="w-full rounded-2xl bg-slate-55 p-3.5 text-sm font-semibold border bg-slate-50/50 border-slate-100 focus:outline-none focus:border-brand-primary"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs font-black uppercase tracking-wider text-slate-400 ml-1">Price (Loti M)</label>
-                      <input 
-                        required
-                        type="number"
-                        placeholder="e.g. 150"
-                        value={newDealPrice}
-                        onChange={(e) => setNewDealPrice(e.target.value)}
-                        className="w-full rounded-2xl bg-slate-55 p-3.5 text-sm font-semibold border bg-slate-50/50 border-slate-100 focus:outline-none focus:border-brand-primary"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-black uppercase tracking-wider text-slate-400 ml-1">Total Stock</label>
-                      <input 
-                        type="text"
-                        placeholder="e.g. 10 or Flexible"
-                        value={newDealStock}
-                        onChange={(e) => setNewDealStock(e.target.value)}
-                        className="w-full rounded-2xl bg-slate-55 p-3.5 text-sm font-semibold border bg-slate-50/50 border-slate-100 focus:outline-none focus:border-brand-primary"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs font-black uppercase tracking-wider text-slate-400 ml-1">Stock Category</label>
-                      <select
-                        value={newDealCategory}
-                        onChange={(e) => setNewDealCategory(e.target.value)}
-                        className="w-full rounded-2xl bg-slate-55 p-3.5 text-sm font-semibold border bg-slate-50/50 border-slate-100 focus:outline-none focus:border-brand-primary cursor-pointer"
+                    <div className="flex items-center justify-between gap-1 mt-1 sm:mt-0">
+                      <button
+                        onClick={() => handleWithdrawProposal(prop.id)}
+                        className="rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-wider transition-all border border-transparent hover:bg-red-50 text-slate-400 hover:text-red-500 select-none active:scale-90 inline-flex items-center gap-1"
+                        title="Withdraw Pitch Offer"
                       >
-                        {CATEGORIES.map(cat => (
-                          <option key={cat} value={cat}>{cat}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-xs font-black uppercase tracking-wider text-slate-400 ml-1">Campus Reach</label>
-                      <input 
-                        required
-                        type="text"
-                        placeholder="e.g. Roma / NUL or Maseru"
-                        value={newDealCampus}
-                        onChange={(e) => setNewDealCampus(e.target.value)}
-                        className="w-full rounded-2xl bg-slate-55 p-3.5 text-sm font-semibold border bg-slate-50/50 border-slate-100 focus:outline-none focus:border-brand-primary"
-                      />
+                        <Trash2 size={13} /> Withdraw Quote
+                      </button>
+
+                      {prop.status === 'pending' && (
+                        <button
+                          onClick={() => handleOpenEditProposal(prop)}
+                          className="rounded-xl bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 text-[10px] font-black uppercase tracking-wider transition-all select-none active:scale-95 inline-flex items-center gap-1"
+                        >
+                          Revise Offer <ArrowRight size={12} />
+                        </button>
+                      )}
                     </div>
                   </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
 
-                  <div>
-                    <label className="text-xs font-black uppercase tracking-wider text-slate-400 ml-1">Custom Image URL (Optional)</label>
-                    <input 
-                      type="url"
-                      placeholder="https://images.unsplash.com/... or keep blank for placeholder"
-                      value={newDealImg}
-                      onChange={(e) => setNewDealImg(e.target.value)}
-                      className="w-full rounded-2xl bg-slate-55 p-3.5 text-sm font-semibold border bg-slate-50/50 border-slate-100 focus:outline-none focus:border-brand-primary"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-black uppercase tracking-wider text-slate-400 ml-1">Brief Description</label>
-                    <textarea 
-                      required
-                      placeholder="Explain features, condition, specs, or options..."
-                      value={newDealDesc}
-                      onChange={(e) => setNewDealDesc(e.target.value)}
-                      rows={3}
-                      className="w-full rounded-2xl bg-slate-55 p-3.5 text-sm font-semibold border bg-slate-50/50 border-slate-100 focus:outline-none focus:border-brand-primary resize-none"
-                    />
-                  </div>
-
-                  <div className="pt-4 flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setShowAddDealModal(false)}
-                      className="flex-1 py-4 text-sm font-black text-slate-500 uppercase tracking-widest bg-slate-50 hover:bg-slate-100 rounded-2xl border transition-all select-none"
-                    >
-                      Bail Out
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 py-4 text-sm font-black text-white uppercase tracking-widest bg-brand-primary hover:bg-emerald-600 rounded-2xl shadow-xl shadow-green-950/5 transition-all active:scale-95"
-                    >
-                      Publish Deal
-                    </button>
-                  </div>
-                </form>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* MODAL: SUBMIT PROPOSAL / BID */}
+        {/* MODAL: REVISE OFFER BUDGET / STATEMENT */}
         <AnimatePresence>
-          {selectedReqForProposal && (
+          {editingProposal && (
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -695,52 +399,40 @@ const VendorDashboard: React.FC = () => {
                 <div className="flex justify-between items-center mb-6">
                   <div>
                     <h3 className="text-xl font-black text-slate-900 flex items-center gap-1.5">
-                      <Send className="text-brand-primary" size={20} /> Send Proposal Offer
+                      <Send className="text-brand-primary" size={20} /> Revise Submitted Offer
                     </h3>
                     <p className="text-xs font-bold text-slate-400 mt-1">
-                      Direct pitch to <strong className="text-slate-600 font-bold">{selectedReqForProposal.student}</strong>
+                      Updating quote for <strong className="text-slate-600 font-bold">{editingProposal.studentName}</strong>
                     </p>
                   </div>
                   <button 
-                    onClick={() => setSelectedReqForProposal(null)}
+                    onClick={() => setEditingProposal(null)}
                     className="p-1 rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-900 transition-all select-none"
                   >
                     <X size={20} />
                   </button>
                 </div>
 
-                <div className="mb-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Student's Post Details</p>
-                  <h4 className="text-sm font-black text-slate-800">{selectedReqForProposal.item}</h4>
-                  <p className="text-xs text-slate-500 font-medium italic mt-1 line-clamp-2">
-                    "{selectedReqForProposal.description}"
-                  </p>
-                  <div className="flex justify-between items-center mt-3 pt-2.5 border-t border-slate-200/50 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    <span>Campus: {selectedReqForProposal.campus}</span>
-                    <span>Budget: M{selectedReqForProposal.budget}</span>
-                  </div>
-                </div>
-
-                <form onSubmit={handleSubmitProposal} className="space-y-4">
+                <form onSubmit={handleUpdateProposalValue} className="space-y-4">
                   <div>
-                    <label className="text-xs font-black uppercase tracking-wider text-slate-400 ml-1">My Price Offer (Loti M)</label>
+                    <label className="text-xs font-black uppercase tracking-wider text-slate-400 ml-1">New Proposed Price (Loti M)</label>
                     <input 
                       required
                       type="number"
                       placeholder="e.g. 350"
-                      value={proposalPrice}
-                      onChange={(e) => setProposalPrice(e.target.value)}
+                      value={revisedPrice}
+                      onChange={(e) => setRevisedPrice(e.target.value)}
                       className="w-full rounded-2xl bg-slate-55 p-3.5 text-sm font-semibold border bg-slate-50/50 border-slate-100 focus:outline-none focus:border-brand-primary"
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs font-black uppercase tracking-wider text-slate-400 ml-1">Direct Message to Student</label>
+                    <label className="text-xs font-black uppercase tracking-wider text-slate-400 ml-1">Revised Direct Message</label>
                     <textarea 
                       required
-                      placeholder="Introduce your store name, product condition, diagnostic information, pickup details, or delivery availability..."
-                      value={proposalMsg}
-                      onChange={(e) => setProposalMsg(e.target.value)}
+                      placeholder="Update details, availability or warranty statements..."
+                      value={revisedMsg}
+                      onChange={(e) => setRevisedMsg(e.target.value)}
                       rows={4}
                       className="w-full rounded-2xl bg-slate-55 p-3.5 text-sm font-semibold border bg-slate-50/50 border-slate-100 focus:outline-none focus:border-brand-primary resize-none leading-relaxed"
                     />
@@ -749,16 +441,16 @@ const VendorDashboard: React.FC = () => {
                   <div className="pt-4 flex gap-3">
                     <button
                       type="button"
-                      onClick={() => setSelectedReqForProposal(null)}
+                      onClick={() => setEditingProposal(null)}
                       className="flex-1 py-4 text-sm font-black text-slate-500 uppercase tracking-widest bg-slate-50 hover:bg-slate-100 rounded-2xl border transition-all select-none"
                     >
-                      Cancel
+                      Bail Out
                     </button>
                     <button
                       type="submit"
                       className="flex-1 py-4 text-sm font-black text-white uppercase tracking-widest bg-brand-primary hover:bg-emerald-600 rounded-2xl shadow-xl shadow-green-950/5 transition-all active:scale-95"
                     >
-                      Send Offer
+                      Update Pitch Offer
                     </button>
                   </div>
                 </form>
@@ -772,4 +464,4 @@ const VendorDashboard: React.FC = () => {
   );
 };
 
-export default VendorDashboard;
+export default SubmittedOffers;

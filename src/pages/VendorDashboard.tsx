@@ -65,15 +65,31 @@ const VendorDashboard: React.FC = () => {
   });
 
   const [proposals, setProposals] = useState<any[]>(() => {
-    const saved = localStorage.getItem(`vendor_proposals_${user?.uid || 'default'}`);
+    const saved = localStorage.getItem('client_shared_proposals');
     return saved ? JSON.parse(saved) : [
       {
-        id: 'prop-1',
-        requestId: 'req-l2', // Urgency item
+        id: 'prop-fallback-l2-1',
+        requestId: 'req-l2',
         requestTitle: 'HP Pavilion Laptop Charger (65W)',
         studentName: 'Thabo Mokoena',
         proposedPrice: 380,
-        message: 'Greetings! I have the original 65W blue-tip replacement charger in stock right now at Roma Tech Hub. Let me know when you want to pick it up.',
+        vendorName: 'Roma Tech Hub',
+        vendorPhone: '+266 5890 1234',
+        vendorRating: 4.9,
+        message: 'Greetings! I have the original 65W blue-tip replacement. I can deliver to your block on the Roma campus or you can pick it up at our Roma Tech Hub studio.',
+        status: 'pending',
+        timestamp: new Date().toISOString()
+      },
+      {
+        id: 'prop-fallback-l1-1',
+        requestId: 'req-l1',
+        requestTitle: 'Macroeconomics 101 Textbook',
+        studentName: 'Mpuleng Tseoa',
+        proposedPrice: 300,
+        vendorName: 'CAS Books & Supplies',
+        vendorPhone: '+266 5971 8820',
+        vendorRating: 4.9,
+        message: 'Hi, I have a very clean, unmarked copy of this Macroeconomics textbook. Ready to bring it to your room in Maseru campus or meet near CAS.',
         status: 'pending',
         timestamp: new Date().toISOString()
       }
@@ -116,7 +132,7 @@ const VendorDashboard: React.FC = () => {
   }, [deals, user]);
 
   useEffect(() => {
-    localStorage.setItem(`vendor_proposals_${user?.uid || 'default'}`, JSON.stringify(proposals));
+    localStorage.setItem('client_shared_proposals', JSON.stringify(proposals));
   }, [proposals, user]);
 
   const loadStudentRequests = () => {
@@ -229,6 +245,9 @@ const VendorDashboard: React.FC = () => {
       studentName: selectedReqForProposal.student,
       proposedPrice: parseFloat(proposalPrice) || 0,
       message: proposalMsg,
+      vendorName: user?.displayName || 'Roma Tech Hub',
+      vendorPhone: '+266 5890 1234',
+      vendorRating: 4.9,
       status: 'pending',
       timestamp: new Date().toISOString()
     };
@@ -334,7 +353,7 @@ const VendorDashboard: React.FC = () => {
               <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                 <div>
                   <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-                   Live Student <span className="text-brand-primary">Requests</span>
+                    <Sparkles size={22} className="text-brand-primary" /> Live Student <span className="text-brand-primary">Requests</span>
                   </h2>
                   <p className="text-xs font-bold text-slate-500 mt-1">
                     Authentic needs posted by Lesotho university students. Pitch directly to secure orders!

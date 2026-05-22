@@ -120,8 +120,7 @@ const Requests: React.FC = () => {
     e.preventDefault();
     if (!selectedRequest) return;
     
-    const vendorProposalsKey = `vendor_proposals_${user?.uid || 'default'}`;
-    const saved = localStorage.getItem(vendorProposalsKey);
+    const saved = localStorage.getItem('client_shared_proposals');
     const currentProposals = saved ? JSON.parse(saved) : [];
 
     const price = parseFloat(pitchPrice);
@@ -137,11 +136,14 @@ const Requests: React.FC = () => {
       studentName: selectedRequest.student || 'Student',
       proposedPrice: price,
       message: pitchMessage || `Hi! I have this item and can supply it for M${price}.`,
+      vendorName: user?.displayName || 'Roma Tech Hub',
+      vendorPhone: '+266 5890 1234',
+      vendorRating: 4.9,
       status: 'pending',
       timestamp: new Date().toISOString()
     };
 
-    localStorage.setItem(vendorProposalsKey, JSON.stringify([newProposal, ...currentProposals]));
+    localStorage.setItem('client_shared_proposals', JSON.stringify([newProposal, ...currentProposals]));
 
     setPitchSuccess(true);
     setPitchPrice('');
