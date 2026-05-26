@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { updatesApi } from '../lib/api';
+import { dataApi } from '../lib/api';
 
 const CATEGORIES = [
   'Electronics',
@@ -24,18 +24,11 @@ const CATEGORIES = [
   'Other'
 ];
 
-const URGENCY_LEVELS = [
-  { id: 'low', label: 'Casual', color: 'bg-blue-50 text-blue-600 border-blue-100' },
-  { id: 'medium', label: 'Needed Soon', color: 'bg-amber-50 text-amber-600 border-amber-100' },
-  { id: 'high', label: 'Urgent', color: 'bg-red-50 text-red-600 border-red-100' }
-];
-
 const CreateRequest: React.FC = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [budget, setBudget] = useState('');
-  const [urgency, setUrgency] = useState('medium');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
@@ -53,64 +46,19 @@ const CreateRequest: React.FC = () => {
     setError('');
     
     try {
-      // Create the request object
-      const newRequest = {
+      await dataApi.createRequest({
         title,
         description,
         category,
         budget,
-        urgency,
         timestamp: new Date().toISOString(),
-      };
+      });
 
-      // Try to push update to partner's backend
-      try {
-        await updatesApi.pushUpdate({
-          type: 'NEW_REQUEST',
-          data: newRequest
-        });
-      } catch (apiErr) {
-        console.warn('Backend proxy update skipped or failed, using local fallback:', apiErr);
-      }
-
-      // Format for local storage using the common Requests schema
-      const getCampusFromSchool = (schoolName: string | undefined | null): string => {
-        if (!schoolName) return 'Roma';
-        const s = schoolName.toUpperCase();
-        if (s.includes('NUL') || s.includes('LESOTHO') || s.includes('ROMA')) return 'Roma';
-        if (s.includes('LUCT') || s.includes('LIMKOKWING') || s.includes('CAS') || s.includes('ACCOUNTING') || s.includes('LEROTHOLI') || s.includes('MASERU')) return 'Maseru';
-        if (s.includes('LCE') || s.includes('EDUCATION') || s.includes('LERIBE')) return 'Leribe';
-        return 'Roma';
-      };
-
-      const urgencyLabel = urgency === 'low' ? 'Casual' : urgency === 'high' ? 'Urgent' : 'Needed Soon';
-
-      const localNewRequest = {
-        id: `req-local-${Date.now()}`,
-        item: title,
-        category,
-        budget,
-        description,
-        student: user?.displayName || 'Demo Student',
-        studentUid: user?.uid || 'demo-uid',
-        campus: user?.school ? getCampusFromSchool(user.school) : 'Roma',
-        postedAt: 'Just now',
-        urgency: urgencyLabel,
-        status: urgency === 'high' ? 'urgent' : 'open',
-        timestamp: new Date().toISOString()
-      };
-
-      const existing = localStorage.getItem('client_student_requests');
-      const reqList = existing ? JSON.parse(existing) : [];
-      reqList.unshift(localNewRequest);
-      localStorage.setItem('client_student_requests', JSON.stringify(reqList));
-
-      setLoading(false);
       setSuccess(true);
-      setTimeout(() => navigate('/dashboard'), 2000); // Redirect to student dashboard
+      setTimeout(() => navigate('/dashboard'), 1500);
     } catch (err: any) {
       console.error('Submit error:', err);
-      const errorMessage = err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to post request';
+      const errorMessage = err.response?.data?.detail || err.response?.data?.message || err.message || 'Failed to post request';
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -144,12 +92,14 @@ const CreateRequest: React.FC = () => {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
         >
-
+          <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-primary">
+            <Sparkles size={14} /> Marketplace Help
+          </div>
           <h1 className="text-4xl font-black tracking-tight text-slate-900 md:text-5xl">
             Post a <span className="text-brand-primary underline decoration-brand-primary/20 decoration-8 underline-offset-4">Request</span>
           </h1>
           <p className="mt-3 text-lg font-medium text-slate-500">
-            Looking for something? Describe it here and let the campus community find it for you.
+            Can't find what you need? Describe it here and let the campus community find it for you.
           </p>
         </motion.div>
       </div>
@@ -214,28 +164,6 @@ const CreateRequest: React.FC = () => {
 
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-slate-400 ml-1">
-                <AlertCircle size={14} className="text-brand-primary" /> Urgency
-              </label>
-              <div className="grid grid-cols-3 gap-3">
-                {URGENCY_LEVELS.map(level => (
-                  <button
-                    key={level.id}
-                    type="button"
-                    onClick={() => setUrgency(level.id)}
-                    className={`rounded-2xl border-2 py-3 text-xs font-black uppercase tracking-widest transition-all ${
-                      urgency === level.id 
-                        ? `${level.color} shadow-sm ring-2 ring-offset-2 ring-brand-primary/20` 
-                        : 'border-slate-50 bg-slate-50 text-slate-400'
-                    }`}
-                  >
-                    {level.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-slate-400 ml-1">
                 <Info size={14} className="text-brand-primary" /> Additional Details
               </label>
               <textarea 
@@ -273,7 +201,7 @@ const CreateRequest: React.FC = () => {
           <button
             disabled={loading || !title}
             type="submit"
-            className="group flex-[2] flex items-center justify-center gap-3 rounded-3xl bg-brand-primary py-5 text-base font-black text-white shadow-2xl shadow-green-900/10 transition-all hover:scale-[1.02] hover:bg-emerald-600 active:scale-95 disabled:opacity-50"
+            className="group flex-2 flex items-center justify-center gap-3 rounded-3xl bg-brand-primary py-5 text-base font-black text-white shadow-2xl shadow-green-900/10 transition-all hover:scale-[1.02] hover:bg-emerald-600 active:scale-95 disabled:opacity-50"
           >
             {loading ? 'Posting...' : 'Confirm Post'}
             <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />

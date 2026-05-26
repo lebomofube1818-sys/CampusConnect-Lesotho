@@ -19,6 +19,8 @@ export const dataApi = {
   getStudents: () => api.get('/students'),
   getCategories: () => api.get('/categories'),
   getVendors: () => api.get('/vendors'),
+  createRequest: (data: any) => api.post('/updates', data),
+  sync: (data?: any) => data ? api.post('/sync', data) : api.get('/sync'),
 };
 
 export const updatesApi = {

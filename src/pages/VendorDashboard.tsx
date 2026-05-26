@@ -22,6 +22,7 @@ import {
   Filter
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+import { dataApi } from '../lib/api';
 
 // Initial Mock products/deals for this vendor
 const INITIAL_VENDOR_DEALS = [
@@ -122,9 +123,60 @@ const VendorDashboard: React.FC = () => {
   const [proposalPrice, setProposalPrice] = useState('');
   const [proposalMsg, setProposalMsg] = useState('');
 
+  const syncWithServerDatabase = async (overrideRequests?: any[], overrideProposals?: any[]) => {
+    try {
+      const localRequestsRaw = localStorage.getItem('client_student_requests');
+      const localProposalsRaw = localStorage.getItem('client_shared_proposals');
+      
+      const requests = overrideRequests || (localRequestsRaw ? JSON.parse(localRequestsRaw) : []);
+      const proposalsList = overrideProposals || (localProposalsRaw ? JSON.parse(localProposalsRaw) : []);
+
+      const response = await dataApi.sync({
+        requests,
+        proposals: proposalsList
+      });
+
+      if (response && response.data) {
+        const serverRequests = response.data.requests || [];
+        const serverProposals = response.data.proposals || [];
+
+        // Merge requests, server-side is authority
+        const mergedRequests = [...requests];
+        serverRequests.forEach((sr: any) => {
+          const idx = mergedRequests.findIndex(r => r.id === sr.id);
+          if (idx === -1) {
+            mergedRequests.push(sr);
+          } else {
+            mergedRequests[idx] = { ...mergedRequests[idx], ...sr };
+          }
+        });
+
+        // Merge proposals
+        const mergedProposals = [...proposalsList];
+        serverProposals.forEach((sp: any) => {
+          const idx = mergedProposals.findIndex(p => p.id === sp.id);
+          if (idx === -1) {
+            mergedProposals.push(sp);
+          } else {
+            mergedProposals[idx] = { ...mergedProposals[idx], ...sp };
+          }
+        });
+
+        localStorage.setItem('client_student_requests', JSON.stringify(mergedRequests));
+        localStorage.setItem('client_shared_proposals', JSON.stringify(mergedProposals));
+
+        setStudentRequests(mergedRequests);
+        setProposals(mergedProposals);
+      }
+    } catch (err) {
+      console.warn("Real-time cloud database sync skipped, offline mode:", err);
+    }
+  };
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' });
     loadStudentRequests();
+    syncWithServerDatabase();
   }, []);
 
   useEffect(() => {
@@ -140,53 +192,7 @@ const VendorDashboard: React.FC = () => {
     if (local) {
       setStudentRequests(JSON.parse(local));
     } else {
-      // Default fallback student requests for NUL/LUCT
-      const defaultRequests = [
-        {
-          id: 'req-l1',
-          item: 'Macroeconomics 101 Textbook',
-          category: 'Books',
-          budget: '320',
-          description: 'Looking for a clean copy of the prescribed Macroeconomics textbook. No torn pages or heavy highlights.',
-          student: 'Mpuleng Tseoa',
-          studentUid: 'student-mpuleng',
-          campus: 'Roma',
-          postedAt: '2 days ago',
-          urgency: 'Needed Soon',
-          status: 'open',
-          timestamp: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString()
-        },
-        {
-          id: 'req-l2',
-          item: 'HP Pavilion Laptop Charger (65W)',
-          category: 'Electronics',
-          budget: '450',
-          description: 'Urgent! My charger short-circuited and I need a replacement immediately to complete my software lab assignment due tomorrow.',
-          student: 'Thabo Mokoena',
-          studentUid: 'student-thabo',
-          campus: 'Roma',
-          postedAt: '5 hours ago',
-          urgency: 'Urgent',
-          status: 'urgent',
-          timestamp: new Date(Date.now() - 5 * 3600 * 1000).toISOString()
-        },
-        {
-          id: 'req-l3',
-          item: 'Custom Graduation Varsity Jacket',
-          category: 'Handmade',
-          budget: '600',
-          description: 'We need customized outerwear customized with LUCT badge embroidery for a student organization of 10 members.',
-          student: 'Khotso Molapo',
-          studentUid: 'student-khotso',
-          campus: 'Maseru',
-          postedAt: '12 hours ago',
-          urgency: 'Needed Soon',
-          status: 'open',
-          timestamp: new Date(Date.now() - 12 * 3600 * 1000).toISOString()
-        }
-      ];
-      localStorage.setItem('client_student_requests', JSON.stringify(defaultRequests));
-      setStudentRequests(defaultRequests);
+      setStudentRequests([]);
     }
   };
 
@@ -252,14 +258,21 @@ const VendorDashboard: React.FC = () => {
       timestamp: new Date().toISOString()
     };
 
-    setProposals([newProp, ...proposals]);
+    const updated = [newProp, ...proposals];
+    setProposals(updated);
+    localStorage.setItem('client_shared_proposals', JSON.stringify(updated));
+    syncWithServerDatabase(undefined, updated);
+
     setSelectedReqForProposal(null);
     setProposalPrice('');
     setProposalMsg('');
   };
 
   const handleCancelProposal = (id: string) => {
-    setProposals(proposals.filter(p => p.id !== id));
+    const finalPropList = proposals.filter(p => p.id !== id);
+    setProposals(finalPropList);
+    localStorage.setItem('client_shared_proposals', JSON.stringify(finalPropList));
+    syncWithServerDatabase(undefined, finalPropList);
   };
 
   // Filter requests based on inputs
@@ -428,7 +441,7 @@ const VendorDashboard: React.FC = () => {
                             <span className={`px-1.5 sm:px-2.5 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-wider ${
                               req.status === 'urgent' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-brand-primary'
                             }`}>
-                              {req.urgency}
+                              {req.category || 'Active'}
                             </span>
                             <span className="bg-slate-50 border border-slate-100 rounded-full px-1.5 sm:px-2.5 py-0.5 text-[8px] sm:text-[9px] font-bold text-slate-500 truncate max-w-[80px] sm:max-w-none">
                               {req.campus}

@@ -52,7 +52,7 @@ const Navbar: React.FC = () => {
                     if (fallback) fallback.classList.remove('hidden');
                   }}
                 />
-                <ShoppingBag size={28} className="fallback-icon relative z-10 hidden text-brand-primary md:size-[32px]" />
+                <ShoppingBag size={28} className="fallback-icon relative z-10 hidden text-brand-primary md:size-8" />
               </div>
               <div className="flex flex-col leading-tight">
                 <span className="bg-linear-to-r from-slate-900 to-slate-700 bg-clip-text text-lg font-black tracking-tight text-transparent md:text-xl">
@@ -115,7 +115,7 @@ const Navbar: React.FC = () => {
                 className="group flex items-center gap-1.5 rounded-full bg-brand-primary px-3.5 py-1.5 text-[10px] font-black text-white shadow-lg shadow-green-100 transition-all hover:bg-green-600 hover:-translate-y-0.5 active:scale-95 sm:gap-2 sm:px-5 sm:py-2 sm:text-xs"
               >
                 <div className="hidden h-4 w-4 items-center justify-center rounded-full bg-white/20 text-white transition-colors group-hover:bg-white group-hover:text-brand-primary sm:flex sm:h-5 sm:w-5">
-                  <UserIcon size={10} className="sm:size-[12px]" />
+                  <UserIcon size={10} className="sm:size-3" />
                 </div>
                 <span>Sign In</span>
               </Link>

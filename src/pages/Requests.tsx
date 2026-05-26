@@ -19,56 +19,7 @@ import {
 import { dataApi } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
 
-const MOCK_REQUESTS = [
-  {
-    id: 'req1',
-    item: 'HP Laptop Charger (65W)',
-    category: 'Electronics',
-    budget: '450',
-    description: 'Looking for an original HP charger for my Pavilion laptop. Must be in Roma campus for quick pickup today.',
-    student: 'Thabo Mokoena',
-    campus: 'Roma',
-    postedAt: '2 hours ago',
-    urgency: 'High',
-    status: 'urgent'
-  },
-  {
-    id: 'req2',
-    item: 'Macroeconomics Textbook',
-    category: 'Books',
-    budget: '300-400',
-    description: 'Need the latest edition for NUL first-year economics. Willing to negotiate price if in good condition.',
-    student: 'Neo Sekoai',
-    campus: 'Maseru',
-    postedAt: '5 hours ago',
-    urgency: 'Standard',
-    status: 'open'
-  },
-  {
-    id: 'req3',
-    item: 'Scientific Calculator',
-    category: 'Stationery',
-    budget: '250',
-    description: 'Casio fx-991ES preferred. Needed for upcoming math finals.',
-    student: 'Lerato Phiri',
-    campus: 'Roma',
-    postedAt: '1 day ago',
-    urgency: 'High',
-    status: 'urgent'
-  },
-  {
-    id: 'req4',
-    item: 'Campus Hoodie (Medium)',
-    category: 'Fashion',
-    budget: '350',
-    description: 'Looking for a branded NUL or Roma campus hoodie. Grey or Navy preferred.',
-    student: 'Khotso Molapo',
-    campus: 'Maseru',
-    postedAt: 'Yesterday',
-    urgency: 'Standard',
-    status: 'open'
-  }
-];
+const MOCK_REQUESTS: any[] = [];
 
 const Requests: React.FC = () => {
   const { user } = useAuthStore();
@@ -97,26 +48,65 @@ const Requests: React.FC = () => {
   const loadRequests = async () => {
     try {
       setLoading(true);
-      // Fetch dynamic student requests in-session first, then fallback/combine with mock
+      let localRequests = [];
       const local = localStorage.getItem('client_student_requests');
-      let combined = [...MOCK_REQUESTS];
       if (local) {
-        const parsed = JSON.parse(local);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const ids = new Set(parsed.map((item: any) => item.id));
-          combined = [...parsed, ...MOCK_REQUESTS.filter(req => !ids.has(req.id))];
-        }
+        localRequests = JSON.parse(local);
       }
-      setRequests(combined);
+      const localProposals = localStorage.getItem('client_shared_proposals');
+      const proposalsList = localProposals ? JSON.parse(localProposals) : [];
+
+      try {
+        const response = await dataApi.sync({
+          requests: localRequests,
+          proposals: proposalsList
+        });
+
+        if (response && response.data) {
+          const serverRequests = response.data.requests || [];
+          const serverProposals = response.data.proposals || [];
+
+          // Merge requests, server-side is authority
+          const mergedRequests = [...localRequests];
+          serverRequests.forEach((sr: any) => {
+            const idx = mergedRequests.findIndex(r => r.id === sr.id);
+            if (idx === -1) {
+              mergedRequests.push(sr);
+            } else {
+              mergedRequests[idx] = { ...mergedRequests[idx], ...sr };
+            }
+          });
+
+          // Merge proposals
+          const mergedProposals = [...proposalsList];
+          serverProposals.forEach((sp: any) => {
+            const idx = mergedProposals.findIndex(p => p.id === sp.id);
+            if (idx === -1) {
+              mergedProposals.push(sp);
+            } else {
+              mergedProposals[idx] = { ...mergedProposals[idx], ...sp };
+            }
+          });
+
+          localStorage.setItem('client_student_requests', JSON.stringify(mergedRequests));
+          localStorage.setItem('client_shared_proposals', JSON.stringify(mergedProposals));
+          
+          localRequests = mergedRequests;
+        }
+      } catch (syncErr) {
+        console.warn("Real-time cloud database sync skipped during requests load:", syncErr);
+      }
+
+      setRequests(localRequests);
     } catch (err) {
       console.error('Failed to load requests, using fallback:', err);
-      setRequests(MOCK_REQUESTS);
+      setRequests([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSendPitch = (e: React.FormEvent) => {
+  const handleSendPitch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedRequest) return;
     
@@ -143,7 +133,17 @@ const Requests: React.FC = () => {
       timestamp: new Date().toISOString()
     };
 
-    localStorage.setItem('client_shared_proposals', JSON.stringify([newProposal, ...currentProposals]));
+    const updatedProposals = [newProposal, ...currentProposals];
+    localStorage.setItem('client_shared_proposals', JSON.stringify(updatedProposals));
+
+    // Share real-time proposal update with of all browsers/partners!
+    try {
+      await dataApi.sync({
+        proposals: updatedProposals
+      });
+    } catch (syncErr) {
+      console.warn("Real-time pitch sync skipped, offline:", syncErr);
+    }
 
     setPitchSuccess(true);
     setPitchPrice('');

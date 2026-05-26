@@ -113,25 +113,27 @@ const Profile: React.FC = () => {
               {/* Highlight pattern */}
               <div className="absolute top-0 inset-x-0 h-2 bg-linear-to-r from-brand-primary via-accent to-brand-primary" />
               
-              <div className="relative group mt-4">
-                <div className="h-28 w-28 overflow-hidden rounded-full ring-4 ring-slate-50 border border-slate-200 shadow-inner">
-                  <img 
-                    src={photoURL} 
-                    alt="Active Avatar" 
-                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                  />
+              {user.role !== 'vendor' && (
+                <div className="relative group mt-4">
+                  <div className="h-28 w-28 overflow-hidden rounded-full ring-4 ring-slate-50 border border-slate-200 shadow-inner">
+                    <img 
+                      src={photoURL} 
+                      alt="Active Avatar" 
+                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowAvatarPicker(!showAvatarPicker)}
+                    className="absolute bottom-1 right-1 h-8 w-8 rounded-full bg-slate-900 text-white flex items-center justify-center hover:bg-slate-800 shadow-md transition-all active:scale-95 cursor-pointer"
+                    title="Pick Avatar"
+                  >
+                    <Camera size={14} />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowAvatarPicker(!showAvatarPicker)}
-                  className="absolute bottom-1 right-1 h-8 w-8 rounded-full bg-slate-900 text-white flex items-center justify-center hover:bg-slate-800 shadow-md transition-all active:scale-95 cursor-pointer"
-                  title="Pick Avatar"
-                >
-                  <Camera size={14} />
-                </button>
-              </div>
+              )}
 
-              <h2 className="mt-4 text-xl font-black text-slate-900 leading-tight">
+              <h2 className={`text-xl font-black text-slate-900 leading-tight ${user.role === 'vendor' ? 'mt-6' : 'mt-4'}`}>
                 {displayName || 'Campus Trader'}
               </h2>
               <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mt-1 flex items-center gap-1">
@@ -151,10 +153,12 @@ const Profile: React.FC = () => {
                   <Mail size={14} className="text-slate-400 shrink-0" />
                   <span className="truncate">{email}</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-                  <MapPin size={14} className="text-slate-400 shrink-0" />
-                  <span className="truncate">{school}</span>
-                </div>
+                {user.role !== 'vendor' && (
+                  <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
+                    <MapPin size={14} className="text-slate-400 shrink-0" />
+                    <span className="truncate">{school}</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -194,16 +198,18 @@ const Profile: React.FC = () => {
             </AnimatePresence>
 
             {/* Quick Stats or Community metrics */}
-            <div className="rounded-[2.5rem] bg-slate-900 text-white p-6 shadow-md relative overflow-hidden">
-              <Compass className="absolute -right-6 -bottom-6 text-white/5" size={130} />
-              <div className="relative z-10">
-                <span className="text-[10px] font-black uppercase tracking-wider text-brand-primary">Lesotho Trust Factor</span>
-                <p className="text-3xl font-black mt-1 font-mono">4.9<span className="text-xs text-white/40">/ 5.0</span></p>
-                <p className="text-[11px] font-medium text-slate-400 leading-normal mt-2">
-                  Maintain solid customer relations and deliver authentic deals to keep your verification profile green.
-                </p>
+            {user.role !== 'vendor' && (
+              <div className="rounded-[2.5rem] bg-slate-900 text-white p-6 shadow-md relative overflow-hidden">
+                <Compass className="absolute -right-6 -bottom-6 text-white/5" size={130} />
+                <div className="relative z-10">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-brand-primary">Lesotho Trust Factor</span>
+                  <p className="text-3xl font-black mt-1 font-mono">4.9<span className="text-xs text-white/40">/ 5.0</span></p>
+                  <p className="text-[11px] font-medium text-slate-400 leading-normal mt-2">
+                    Maintain solid customer relations and deliver authentic deals to keep your verification profile green.
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
 
           </div>
 
@@ -262,7 +268,7 @@ const Profile: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-1">
+                  <div className={`grid grid-cols-1 gap-1 ${user.role === 'vendor' ? 'col-span-2' : ''}`}>
                     <label className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">Registered Email</label>
                     <div className="relative">
                       <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-350" size={14} />
@@ -276,23 +282,25 @@ const Profile: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-1">
-                    <label className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">Campus Hub</label>
-                    <div className="relative">
-                      <GraduationCap className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                      <select
-                        value={school}
-                        onChange={(e) => setSchool(e.target.value)}
-                        className="w-full rounded-2xl bg-slate-50 border border-slate-100/80 pl-9 pr-6 py-2.5 text-xs font-semibold focus:outline-none focus:border-brand-primary appearance-none cursor-pointer truncate"
-                      >
-                        <option value="NUL (National University of Lesotho)">NUL - Roma</option>
-                        <option value="Limkokwing University of Creative Technology">Limkokwing - Maseru</option>
-                        <option value="Leloaleng Trades School">Leloaleng Trades</option>
-                        <option value="Lerotholi Polytechnic">Lerotholi Poly</option>
-                      </select>
-                      <span className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[10px]">▼</span>
+                  {user.role !== 'vendor' && (
+                    <div className="grid grid-cols-1 gap-1">
+                      <label className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">Campus Hub</label>
+                      <div className="relative">
+                        <GraduationCap className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                        <select
+                          value={school}
+                          onChange={(e) => setSchool(e.target.value)}
+                          className="w-full rounded-2xl bg-slate-50 border border-slate-100/80 pl-9 pr-6 py-2.5 text-xs font-semibold focus:outline-none focus:border-brand-primary appearance-none cursor-pointer truncate"
+                        >
+                          <option value="NUL (National University of Lesotho)">NUL - Roma</option>
+                          <option value="Limkokwing University of Creative Technology">Limkokwing - Maseru</option>
+                          <option value="Leloaleng Trades School">Leloaleng Trades</option>
+                          <option value="Lerotholi Polytechnic">Lerotholi Poly</option>
+                        </select>
+                        <span className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[10px]">▼</span>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 gap-1">

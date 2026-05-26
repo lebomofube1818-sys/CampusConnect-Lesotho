@@ -147,11 +147,62 @@ const StudentDashboard: React.FC = () => {
   const studentSchoolCode = getStudentSchoolCode(user?.school);
   const studentCampus = getCampusFromSchool(user?.school);
 
+  const syncWithServerDatabase = async (overrideRequests?: any[], overrideProposals?: any[]) => {
+    try {
+      const localRequestsRaw = localStorage.getItem('client_student_requests');
+      const localProposalsRaw = localStorage.getItem('client_shared_proposals');
+      
+      const requests = overrideRequests || (localRequestsRaw ? JSON.parse(localRequestsRaw) : []);
+      const proposalsList = overrideProposals || (localProposalsRaw ? JSON.parse(localProposalsRaw) : []);
+
+      const response = await dataApi.sync({
+        requests,
+        proposals: proposalsList
+      });
+
+      if (response && response.data) {
+        const serverRequests = response.data.requests || [];
+        const serverProposals = response.data.proposals || [];
+
+        // Merge requests, server-side is authority
+        const mergedRequests = [...requests];
+        serverRequests.forEach((sr: any) => {
+          const idx = mergedRequests.findIndex(r => r.id === sr.id);
+          if (idx === -1) {
+            mergedRequests.push(sr);
+          } else {
+            mergedRequests[idx] = { ...mergedRequests[idx], ...sr };
+          }
+        });
+
+        // Merge proposals
+        const mergedProposals = [...proposalsList];
+        serverProposals.forEach((sp: any) => {
+          const idx = mergedProposals.findIndex(p => p.id === sp.id);
+          if (idx === -1) {
+            mergedProposals.push(sp);
+          } else {
+            mergedProposals[idx] = { ...mergedProposals[idx], ...sp };
+          }
+        });
+
+        localStorage.setItem('client_student_requests', JSON.stringify(mergedRequests));
+        localStorage.setItem('client_shared_proposals', JSON.stringify(mergedProposals));
+
+        setStudentRequests(mergedRequests);
+        setProposals(mergedProposals);
+      }
+    } catch (err) {
+      console.warn("Real-time cloud database sync skipped, offline mode:", err);
+    }
+  };
+
   useEffect(() => {
     window.scrollTo(0, 0);
     loadVendors();
     loadStudentRequests();
     loadSharedProposals();
+    syncWithServerDatabase();
   }, [user]);
 
   const loadSharedProposals = () => {
@@ -198,8 +249,6 @@ const StudentDashboard: React.FC = () => {
   };
 
   const handleAcceptOffer = (offer: any) => {
-    // 1. Mark this selected offer as 'accepted'
-    // 2. Mark other offers for this request as 'declined'
     const updatedProposals = proposals.map((p: any) => {
       if (p.requestId === offer.requestId) {
         if (p.id === offer.id) {
@@ -213,15 +262,18 @@ const StudentDashboard: React.FC = () => {
 
     handlePersistProposals(updatedProposals);
 
-    // 3. Update the request status to 'resolved'
+    // Update request state status to 'resolved' and remove/comment out urgency setting
     const updatedRequests = studentRequests.map((r: any) => {
       if (r.id === offer.requestId) {
-        return { ...r, status: 'resolved', urgency: 'Resolved' };
+        return { ...r, status: 'resolved' };
       }
       return r;
     });
     setStudentRequests(updatedRequests);
     localStorage.setItem('client_student_requests', JSON.stringify(updatedRequests));
+
+    // Force post sync to server
+    syncWithServerDatabase(updatedRequests, updatedProposals);
 
     // Show beautiful success handshake modal
     setSelectedOfferForAccept(offer);
@@ -233,47 +285,6 @@ const StudentDashboard: React.FC = () => {
     const local = localStorage.getItem('client_student_requests');
     let parsedLocal = local ? JSON.parse(local) : [];
 
-    // Pre-populate some initial customizable entries if no posts exist
-    if (parsedLocal.length === 0) {
-      const studentName = user?.displayName || 'Thabo Mokoena';
-      const studentUid = user?.uid || 'demo-student-uid';
-      const rawSchool = user?.school || 'NUL';
-      const campus = getCampusFromSchool(rawSchool);
-      
-      const defaultRequests = [
-        {
-          id: 'req-l1',
-          item: 'Macroeconomics 101 Textbook',
-          category: 'Books',
-          budget: '320',
-          description: 'Looking for a clean copy of the prescribed Macroeconomics textbook. No torn pages or heavy highlights.',
-          student: studentName,
-          studentUid: studentUid,
-          campus: campus,
-          postedAt: '2 days ago',
-          urgency: 'Needed Soon',
-          status: 'open',
-          timestamp: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString()
-        },
-        {
-          id: 'req-l2',
-          item: 'HP Pavilion Laptop Charger (65W)',
-          category: 'Electronics',
-          budget: '450',
-          description: 'Urgent! My charger short-circuited and I need a replacement immediately to complete my software lab assignment due tomorrow.',
-          student: studentName,
-          studentUid: studentUid,
-          campus: campus,
-          postedAt: '5 hours ago',
-          urgency: 'Urgent',
-          status: 'urgent',
-          timestamp: new Date(Date.now() - 5 * 3600 * 1000).toISOString()
-        }
-      ];
-      localStorage.setItem('client_student_requests', JSON.stringify(defaultRequests));
-      parsedLocal = defaultRequests;
-    }
-
     setStudentRequests(parsedLocal);
   };
 
@@ -283,8 +294,7 @@ const StudentDashboard: React.FC = () => {
         const isResolved = req.status === 'resolved';
         return {
           ...req,
-          status: isResolved ? 'open' : 'resolved',
-          urgency: isResolved ? 'Needed Soon' : 'Resolved'
+          status: isResolved ? 'open' : 'resolved'
         };
       }
       return req;
@@ -485,7 +495,7 @@ const StudentDashboard: React.FC = () => {
                           ? 'bg-rose-50 text-rose-600'
                           : 'bg-emerald-50 text-brand-primary'
                     }`}>
-                      {req.status === 'resolved' ? 'Resolved' : req.urgency}
+                      {req.status === 'resolved' ? 'Resolved' : req.category || 'Open'}
                     </span>
                     <span className="text-sm sm:text-lg font-black text-brand-primary font-mono select-none">M{req.budget}</span>
                   </div>
@@ -629,56 +639,34 @@ const StudentDashboard: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-2">
-            {sortedVendors.map((vendor, idx) => (
+             {sortedVendors.map((vendor, idx) => (
               <motion.div
                 key={vendor.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.1 }}
-                className="group relative flex flex-col overflow-hidden rounded-2xl sm:rounded-[2.5rem] bg-white shadow-xl shadow-slate-100 ring-1 ring-slate-100 transition-all hover:-translate-y-2 hover:shadow-2xl sm:flex-row"
+                className="group relative flex flex-col overflow-hidden rounded-2xl sm:rounded-[2.5rem] bg-white shadow-xl shadow-slate-100 ring-1 ring-slate-100 transition-all hover:-translate-y-2 hover:shadow-2xl"
               >
-                {/* Vendor Image & Badge Area */}
-                <div className="relative h-28 w-full shrink-0 overflow-hidden sm:h-auto sm:w-56">
-                  <img 
-                    src={vendor.image} 
-                    alt={vendor.name} 
-                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110 animate-fade-in"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                  
-                  {/* Trust Status Badges */}
-                  <div className="absolute bottom-2 left-2 flex flex-wrap gap-1 sm:bottom-auto sm:top-4 sm:left-4 sm:flex-col">
-                    {vendor.workedWith && (
-                      <div className="flex items-center gap-1 rounded-full bg-slate-950 px-2 py-0.5 text-[8px] sm:text-[9px] font-black uppercase tracking-wider text-yellow-300 shadow-md">
-                        <Star size={8} fill="currentColor" stroke="none" /> <span className="hidden sm:inline">Worked & Trusted </span>({vendor.dealsCount})
-                      </div>
-                    )}
-                    {vendor.verified && (
-                      <div className="flex items-center gap-1 rounded-full bg-brand-primary px-2 py-0.5 text-[8px] sm:text-[9px] font-black uppercase tracking-wider text-white shadow-md">
-                        <ShieldCheck size={8} /> <span className="hidden sm:inline">Verified Partner</span><span className="inline sm:hidden">Verified</span>
-                      </div>
-                    )}
-                    {vendor.universities?.some((uni: string) => uni.toUpperCase() === studentSchoolCode.toUpperCase()) && (
-                      <div className="flex items-center gap-1 rounded-full bg-blue-600 px-2 py-0.5 text-[8px] sm:text-[9px] font-black uppercase tracking-wider text-white shadow-md">
-                        <GraduationCap size={8} /> <span className="hidden sm:inline">{studentSchoolCode} Campus</span><span className="inline sm:hidden">{studentSchoolCode}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
                 {/* Vendor Info */}
-                <div className="flex flex-1 flex-col p-3.5 sm:p-8">
+                <div className="flex flex-1 flex-col p-5 sm:p-8">
                   <div className="mb-2 sm:mb-4 flex items-start justify-between gap-1">
                     <div>
-                      <h3 className="text-sm sm:text-xl font-black text-slate-900 group-hover:text-brand-primary transition-colors line-clamp-1">
-                        {vendor.name}
-                      </h3>
+                      <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                        <h3 className="text-sm sm:text-xl font-black text-slate-900 group-hover:text-brand-primary transition-colors line-clamp-1">
+                          {vendor.name}
+                        </h3>
+                        {vendor.verified && (
+                          <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[8px] sm:text-[9px] font-black uppercase tracking-wider text-brand-primary border border-emerald-100">
+                            <ShieldCheck size={9} /> Verified
+                          </span>
+                        )}
+                        {vendor.workedWith && (
+                          <span className="inline-flex items-center gap-0.5 rounded-full bg-slate-950 px-2 py-0.5 text-[8px] sm:text-[9px] font-black uppercase tracking-wider text-yellow-300">
+                            ★ Trusted ({vendor.dealsCount})
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[10px] sm:text-xs font-bold text-slate-400">{vendor.category}</p>
-                    </div>
-                    <div className="flex items-center gap-0.5 sm:gap-1 rounded-lg sm:rounded-xl bg-amber-50 px-1.5 sm:px-2 py-0.5 sm:py-1 text-amber-600 shrink-0">
-                      <Star size={10} className="sm:w-3.5 sm:h-3.5" fill="currentColor" />
-                      <span className="text-[10px] sm:text-xs font-black">{vendor.rating}</span>
                     </div>
                   </div>
 
@@ -694,22 +682,6 @@ const StudentDashboard: React.FC = () => {
                       <div className="flex flex-wrap gap-1">
                         {vendor.locations.map(loc => (
                           <span key={loc} className="text-[9px] sm:text-xs font-bold text-slate-600">{loc}</span>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <div className="flex h-5 w-5 sm:h-7 sm:w-7 items-center justify-center rounded-md sm:rounded-lg bg-slate-50 text-slate-400 shrink-0">
-                        <GraduationCap size={11} className="sm:w-3.5 sm:h-3.5" />
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        {vendor.universities.map(uni => (
-                          <span key={uni} className={`text-[9px] sm:text-xs font-bold ${
-                            uni.toUpperCase() === studentSchoolCode.toUpperCase()
-                              ? 'text-brand-primary font-black'
-                              : 'text-slate-600'
-                          }`}>
-                            {uni}
-                          </span>
                         ))}
                       </div>
                     </div>
@@ -853,9 +825,6 @@ const StudentDashboard: React.FC = () => {
                               <div className="min-w-0">
                                 <h4 className="text-base font-black text-slate-950 flex items-center gap-1.5">
                                   <Store size={15} className="text-emerald-500 shrink-0" /> {offer.vendorName}
-                                  <span className="flex items-center gap-0.5 rounded-lg bg-amber-50 px-1.5 py-0.5 text-[9px] font-black text-amber-600 font-sans">
-                                    ★ {offer.vendorRating || '4.9'}
-                                  </span>
                                 </h4>
                                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-mono block mt-0.5">
                                   Verified Campus Merchant
