@@ -16,12 +16,13 @@ import {
   CheckCircle2,
   X,
   Phone,
-  Check
+  Check,
+  Pencil
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useFavoritesStore } from '../store/favoritesStore';
-import { dataApi } from '../lib/api';
+import { dataApi, updatesApi } from '../lib/api';
 
 const MOCK_VENDORS = [
   {
@@ -143,6 +144,13 @@ const StudentDashboard: React.FC = () => {
   const [selectedRequestForOffers, setSelectedRequestForOffers] = useState<any | null>(null);
   const [selectedOfferForAccept, setSelectedOfferForAccept] = useState<any | null>(null);
   const [showAcceptSuccessModal, setShowAcceptSuccessModal] = useState<boolean>(false);
+
+  // Request editing states
+  const [editingRequest, setEditingRequest] = useState<any | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editCategory, setEditCategory] = useState('');
+  const [editBudget, setEditBudget] = useState('');
 
   const studentSchoolCode = getStudentSchoolCode(user?.school);
   const studentCampus = getCampusFromSchool(user?.school);
@@ -303,10 +311,69 @@ const StudentDashboard: React.FC = () => {
     localStorage.setItem('client_student_requests', JSON.stringify(updated));
   };
 
-  const handleDeleteRequest = (requestId: string) => {
+  const handleStartEdit = (req: any) => {
+    setEditingRequest(req);
+    setEditTitle(req.item || req.title || '');
+    setEditDescription(req.description || '');
+    setEditCategory(req.category || 'Electronics');
+    setEditBudget(req.budget || '');
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingRequest) return;
+
+    const updated = studentRequests.map((req: any) => {
+      if (req.id === editingRequest.id) {
+        return {
+          ...req,
+          item: editTitle,
+          title: editTitle, // for compatibility
+          description: editDescription,
+          category: editCategory,
+          budget: editBudget,
+          timestamp: new Date().toISOString()
+        };
+      }
+      return req;
+    });
+
+    setStudentRequests(updated);
+    localStorage.setItem('client_student_requests', JSON.stringify(updated));
+
+    // Push edit request to server on updates endpoint
+    const updatedObj = updated.find((req: any) => req.id === editingRequest.id);
+    if (updatedObj) {
+      try {
+        await updatesApi.pushUpdate({
+          type: 'EDIT_REQUEST',
+          data: updatedObj
+        });
+      } catch (err) {
+        console.warn('Update push error:', err);
+      }
+    }
+
+    setEditingRequest(null);
+    syncWithServerDatabase(updated);
+  };
+
+  const handleDeleteRequest = async (requestId: string) => {
     const updated = studentRequests.filter(req => req.id !== requestId);
     setStudentRequests(updated);
     localStorage.setItem('client_student_requests', JSON.stringify(updated));
+
+    // Push delete request to server so MongoDB removes it
+    try {
+      await updatesApi.pushUpdate({
+        type: 'DELETE_REQUEST',
+        data: { id: requestId }
+      });
+    } catch (err) {
+      console.warn('Delete push error:', err);
+    }
+
+    syncWithServerDatabase(updated);
   };
 
   const loadVendors = async () => {
@@ -610,6 +677,13 @@ const StudentDashboard: React.FC = () => {
                           }`}
                         >
                           {req.status === 'resolved' ? 'Open' : <span className="inline-flex"><span className="hidden sm:inline mr-0.5">Mark </span>Done</span>}
+                        </button>
+                        <button
+                          onClick={() => handleStartEdit(req)}
+                          className="rounded-lg sm:rounded-xl p-1 sm:p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-all border border-transparent active:scale-90"
+                          title="Edit Request"
+                        >
+                          <Pencil size={12} className="sm:w-4 sm:h-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteRequest(req.id)}
@@ -958,6 +1032,135 @@ const StudentDashboard: React.FC = () => {
                       Return to Dashboard
                     </button>
                   </div>
+                </motion.div>
+              </div>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* ========================================================= */}
+        {/* MODAL 3: EDIT REQUEST OVERLAY                             */}
+        {/* ========================================================= */}
+        <AnimatePresence>
+          {editingRequest && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setEditingRequest(null)}
+                className="fixed inset-0 z-[120] bg-slate-950/60 backdrop-blur-md"
+              />
+              <div className="fixed inset-0 z-[121] flex items-center justify-center p-4 overflow-y-auto">
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0, y: 30 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0.9, opacity: 0, y: 30 }}
+                  transition={{ type: 'spring', damping: 20 }}
+                  className="relative w-full max-w-lg rounded-[2.5rem] bg-white p-6 sm:p-10 shadow-3xl border border-slate-100 overflow-hidden text-left"
+                >
+                  <button 
+                    onClick={() => setEditingRequest(null)}
+                    className="absolute top-6 right-6 p-2 bg-slate-50 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-950 transition-colors select-none"
+                    type="button"
+                  >
+                    <X size={16} />
+                  </button>
+
+                  <div className="mb-6">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 mb-3">
+                      <Pencil size={15} />
+                    </span>
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                      Edit <span className="text-brand-primary">Posted Need</span>
+                    </h2>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono mt-1">
+                      Refine details or adjust budget of your request
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleSaveEdit} className="space-y-4">
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5 font-mono">
+                        Item / Need Title
+                      </label>
+                      <input 
+                        type="text" 
+                        required
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        placeholder="e.g. HP Pavilion Charger, Macroeconomics book"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-brand-primary"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5 font-mono">
+                          Category
+                        </label>
+                        <select
+                          value={editCategory}
+                          onChange={(e) => setEditCategory(e.target.value)}
+                          className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 focus:outline-none focus:border-brand-primary bg-white"
+                        >
+                          {['Electronics', 'Textbooks', 'Clothing', 'Room Decor', 'Services', 'Groceries', 'Other'].map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5 font-mono">
+                          Target Budget (Maloti / M)
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400 font-mono">
+                            M
+                          </span>
+                          <input 
+                            type="number" 
+                            required
+                            min="0"
+                            value={editBudget}
+                            onChange={(e) => setEditBudget(e.target.value)}
+                            placeholder="350"
+                            className="w-full pl-9 pr-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-brand-primary"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5 font-mono">
+                        Detailed Description
+                      </label>
+                      <textarea
+                        required
+                        rows={3}
+                        value={editDescription}
+                        onChange={(e) => setEditDescription(e.target.value)}
+                        placeholder="Describe what you need, specific models, condition, or delivery preferences..."
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-xs sm:text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-brand-primary resize-none"
+                      />
+                    </div>
+
+                    <div className="pt-4 flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setEditingRequest(null)}
+                        className="flex-1 py-3.5 text-xs font-black uppercase tracking-widest bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl transition-all select-none"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="flex-1 py-3.5 text-xs font-black uppercase tracking-widest bg-brand-primary hover:bg-emerald-600 text-white rounded-2xl shadow-lg shadow-emerald-100 transition-all select-none"
+                      >
+                        Save Changes
+                      </button>
+                    </div>
+                  </form>
                 </motion.div>
               </div>
             </>

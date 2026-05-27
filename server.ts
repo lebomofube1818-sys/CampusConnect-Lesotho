@@ -186,86 +186,123 @@ async function startServer() {
   // Combined updates route to handle both /api/updates and /updates seamlessly
   const handleUpdatePost = async (req: express.Request, res: express.Response) => {
     let savedRequest: any = null;
+    let isDelete = false;
+    let deleteId = "";
+
     try {
       const body = req.body;
-      let reqData = body;
       
-      // If of the format { type: 'NEW_REQUEST', data: { ... } }
-      if (body && body.type === 'NEW_REQUEST' && body.data) {
-        reqData = body.data;
-      }
+      if (body && body.type === 'DELETE_REQUEST' && body.data) {
+        isDelete = true;
+        deleteId = body.data.id;
+        sharedRequests = sharedRequests.filter(r => r.id !== deleteId);
 
-      if (reqData) {
-        // Construct a standard request object
-        const title = reqData.item || reqData.title || reqData.item_name || "Untitled Request";
-        const description = reqData.description || "No description provided.";
-        const category = reqData.category || "General";
-        const budget = reqData.budget || "0";
-        const student = reqData.student || "Demo Student";
-        const studentUid = reqData.studentUid || reqData.student_id || "demo-uid";
-        const campus = reqData.campus || "Roma";
-        const id = reqData.id || `req-cloud-${Date.now()}`;
-        const status = reqData.status || "open";
-        const timestamp = reqData.timestamp || reqData.created_at || new Date().toISOString();
-
-        savedRequest = {
-          id,
-          item: title,
-          category,
-          budget,
-          description,
-          student,
-          studentUid,
-          campus,
-          postedAt: "Just now",
-          status,
-          timestamp,
-          // Schema compatibility properties for various database layouts
-          title,
-          student_id: studentUid,
-          student_name: student,
-          item_name: title,
-          created_at: timestamp
-        };
-
-        // Add to sharedRequests if it's not already in there
-        const index = sharedRequests.findIndex(r => r.id === id);
-        if (index === -1) {
-          sharedRequests.unshift(savedRequest);
-        } else {
-          sharedRequests[index] = { ...sharedRequests[index], ...savedRequest };
-        }
-
-        // Fire background POSTs to all common partner endpoints in parallel so it reaches their database!
-        const endpointsToTry = [
-          { url: `${PARTNER_BACKEND_URL}/requests`, data: savedRequest },
-          { url: `${PARTNER_BACKEND_URL}/api/requests`, data: savedRequest },
-          { url: `${PARTNER_BACKEND_URL}/sync`, data: { requests: [savedRequest] } },
-          { url: `${PARTNER_BACKEND_URL}/api/sync`, data: { requests: [savedRequest] } },
-          { url: `${PARTNER_BACKEND_URL}/updates`, data: { type: 'NEW_REQUEST', data: savedRequest } },
-          { url: `${PARTNER_BACKEND_URL}/api/updates`, data: { type: 'NEW_REQUEST', data: savedRequest } }
+        // Notify partner backend about deletion through standard endpoints too!
+        const deleteEndpoints = [
+          { url: `${PARTNER_BACKEND_URL}/requests/${deleteId}` },
+          { url: `${PARTNER_BACKEND_URL}/api/requests/${deleteId}` },
+          { url: `${PARTNER_BACKEND_URL}/requests/delete/${deleteId}` },
+          { url: `${PARTNER_BACKEND_URL}/api/requests/delete/${deleteId}` }
         ];
 
-        endpointsToTry.forEach(ep => {
-          axios.post(ep.url, ep.data, { timeout: 3000 })
-            .then((pRes) => {
-              console.log(`Successfully synced to partner endpoint: ${ep.url} (Status: ${pRes.status})`);
-            })
-            .catch((pErr) => {
-              console.warn(`Partner endpoint not ready or returned error: ${ep.url} (${pErr.message})`);
-            });
+        deleteEndpoints.forEach(ep => {
+          axios.delete(ep.url, { timeout: 3000 }).catch(() => {});
         });
+      } else {
+        let reqData = body;
+        
+        // If of the format { type: 'NEW_REQUEST' | 'EDIT_REQUEST', data: { ... } }
+        if (body && (body.type === 'NEW_REQUEST' || body.type === 'EDIT_REQUEST') && body.data) {
+          reqData = body.data;
+        }
+
+        if (reqData) {
+          // Construct a standard request object
+          const title = reqData.item || reqData.title || reqData.item_name || "Untitled Request";
+          const description = reqData.description || "No description provided.";
+          const category = reqData.category || "General";
+          const budget = reqData.budget || "0";
+          const student = reqData.student || "Demo Student";
+          const studentUid = reqData.studentUid || reqData.student_id || "demo-uid";
+          const campus = reqData.campus || "Roma";
+          const id = reqData.id || `req-cloud-${Date.now()}`;
+          const status = reqData.status || "open";
+          const timestamp = reqData.timestamp || reqData.created_at || new Date().toISOString();
+
+          savedRequest = {
+            id,
+            item: title,
+            category,
+            budget,
+            description,
+            student,
+            studentUid,
+            campus,
+            postedAt: "Just now",
+            status,
+            timestamp,
+            // Schema compatibility properties for various database layouts
+            title,
+            student_id: studentUid,
+            student_name: student,
+            item_name: title,
+            created_at: timestamp
+          };
+
+          // Add or edit in sharedRequests list
+          const index = sharedRequests.findIndex(r => r.id === id);
+          if (index === -1) {
+            sharedRequests.unshift(savedRequest);
+          } else {
+            sharedRequests[index] = { ...sharedRequests[index], ...savedRequest };
+          }
+
+          // Fire background POSTs / PUTs to all common partner endpoints in parallel so it reaches their database!
+          const endpointsToTry = [
+            { url: `${PARTNER_BACKEND_URL}/requests`, data: savedRequest, method: 'POST' },
+            { url: `${PARTNER_BACKEND_URL}/api/requests`, data: savedRequest, method: 'POST' },
+            { url: `${PARTNER_BACKEND_URL}/requests/${id}`, data: savedRequest, method: 'PUT' },
+            { url: `${PARTNER_BACKEND_URL}/api/requests/${id}`, data: savedRequest, method: 'PUT' },
+            { url: `${PARTNER_BACKEND_URL}/sync`, data: { requests: [savedRequest] }, method: 'POST' },
+            { url: `${PARTNER_BACKEND_URL}/api/sync`, data: { requests: [savedRequest] }, method: 'POST' },
+            { url: `${PARTNER_BACKEND_URL}/updates`, data: { type: body?.type || 'NEW_REQUEST', data: savedRequest }, method: 'POST' },
+            { url: `${PARTNER_BACKEND_URL}/api/updates`, data: { type: body?.type || 'NEW_REQUEST', data: savedRequest }, method: 'POST' }
+          ];
+
+          endpointsToTry.forEach(ep => {
+            if (ep.method === 'PUT') {
+              axios.put(ep.url, ep.data, { timeout: 3000 }).catch(() => {});
+            } else {
+              axios.post(ep.url, ep.data, { timeout: 3000 })
+                .then((pRes) => {
+                  console.log(`Successfully synced to partner endpoint: ${ep.url} (Status: ${pRes.status})`);
+                })
+                .catch((pErr) => {
+                  console.warn(`Partner endpoint not ready or returned error: ${ep.url} (${pErr.message})`);
+                });
+            }
+          });
+        }
       }
     } catch (parseErr) {
       console.error("Error parsing update in updates handler:", parseErr);
     }
 
-    res.status(200).json({
-      success: true,
-      message: "Post created successfully and background synced to partner endpoints.",
-      request: savedRequest,
-      proxied: true
-    });
+    if (isDelete) {
+      res.status(200).json({
+        success: true,
+        message: "Post deleted successfully from memory and synced with partner.",
+        deletedId: deleteId,
+        proxied: true
+      });
+    } else {
+      res.status(200).json({
+        success: true,
+        message: "Post created/updated successfully and background synced to partner endpoints.",
+        request: savedRequest,
+        proxied: true
+      });
+    }
   };
 
   app.post("/api/updates", handleUpdatePost);
