@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { ShoppingBag } from 'lucide-react';
+import { Logo } from './Logo';
 
 const LoadingScreen: React.FC = () => {
   return (
@@ -71,17 +71,7 @@ const LoadingScreen: React.FC = () => {
           />
           
           <div className="relative flex h-full w-full items-center justify-center rounded-[2.5rem] bg-linear-to-br from-brand-primary to-green-600 shadow-[0_0_50px_rgba(34,197,94,0.3)] ring-1 ring-white/20">
-            <img 
-              src="/logo.png" 
-              alt="Logo" 
-              className="h-20 w-20 object-contain drop-shadow-2xl"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                const fallback = e.currentTarget.parentElement?.querySelector('.fallback-icon');
-                if (fallback) fallback.classList.remove('hidden');
-              }}
-            />
-            <ShoppingBag size={48} className="fallback-icon hidden text-white" />
+            <Logo className="h-16 w-16" />
           </div>
           
           {/* Orbiting Elements */}

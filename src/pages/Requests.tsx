@@ -18,6 +18,7 @@ import {
 
 import { dataApi } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
+import { Logo } from '../components/ui/Logo';
 
 const MOCK_REQUESTS: any[] = [];
 
@@ -323,11 +324,7 @@ const Requests: React.FC = () => {
               className="mb-8 flex items-center justify-center p-2"
               style={{ perspective: 1000 }}
             >
-              <img 
-                src="/logo.png" 
-                alt="Campus Connect" 
-                className="h-28 w-28 object-contain drop-shadow-[0_20px_40px_rgba(34,197,94,0.3)] sm:h-40 sm:w-40" 
-              />
+              <Logo className="h-24 w-24 drop-shadow-[0_20px_40px_rgba(34,197,94,0.3)] sm:h-32 sm:w-32" />
             </motion.div>
             <h1 className="text-4xl font-black tracking-tight text-white sm:text-6xl">
               Student <span className="text-brand-primary">Wants.</span>
