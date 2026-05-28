@@ -322,8 +322,8 @@ const Auth: React.FC = () => {
       >
         <div className="rounded-[3rem] bg-white/95 backdrop-blur-xl p-8 shadow-2xl sm:p-10 relative overflow-hidden ring-1 ring-white/50">
           <div className="mb-6 flex flex-col items-center text-center">
-            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 p-2 shadow-inner">
-              <Logo className="h-10 w-10" />
+            <div className="mb-3 flex h-20 w-20 items-center justify-center rounded-3xl bg-emerald-50 p-2.5 shadow-inner">
+              <Logo className="h-14 w-14" />
             </div>
             <h2 className="text-2xl font-black text-slate-900">
               {mode === 'login' ? 'Welcome Back' : 'Join the Community'}
