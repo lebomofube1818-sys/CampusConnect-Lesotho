@@ -7,17 +7,31 @@ interface LogoProps {
 
 export const Logo: React.FC<LogoProps> = ({ className = '', size = '100%' }) => {
   const [imageError, setImageError] = useState(false);
+  const [logoSrc, setLogoSrc] = useState('/logo.png');
+  const [attempts, setAttempts] = useState(0);
 
-  // If there's no error, we try to load the logo.png from the public folder.
+  const handleImageError = () => {
+    if (attempts === 0) {
+      setLogoSrc('/Logo.png');
+      setAttempts(1);
+    } else if (attempts === 1) {
+      setLogoSrc('/logo.PNG');
+      setAttempts(2);
+    } else {
+      setImageError(true);
+    }
+  };
+
+  // If there's no error, we try to load the logo.png from the public folder with case fallback.
   // This automatically uses the file they place in /public/logo.png
   if (!imageError) {
     return (
       <img
-        src="/logo.png"
+        src={logoSrc}
         alt="CampusConnect Logo"
         className={`${className} object-contain`}
         style={{ width: size, height: size }}
-        onError={() => setImageError(true)}
+        onError={handleImageError}
       />
     );
   }

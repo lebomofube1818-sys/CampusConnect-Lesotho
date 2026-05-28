@@ -58,7 +58,9 @@ export default function App() {
               animate={{ opacity: 1 }}
               transition={{ duration: 1, ease: "easeOut" }}
             >
+              {/* SINGLE GLOBALLY RESOLVED NAVBAR AT THE TOP */}
               <Navbar />
+              
               <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <Routes>
                   <Route path="/" element={<Home />} />
