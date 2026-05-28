@@ -36,16 +36,24 @@ async function startServer() {
     url: string,
     method: "GET" | "POST" | "PUT" | "DELETE",
     body: any,
-    res: express.Response
+    res: express.Response,
+    req?: express.Request
   ) {
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      
+      // Carry across Authorization headers for secure MongoDB authentication protection
+      if (req && req.headers && req.headers.authorization) {
+        headers["Authorization"] = req.headers.authorization as string;
+      }
+
       const response = await axios({
         url,
         method,
         data: body,
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         validateStatus: () => true, // Let all response codes pass through to the frontend
       });
       res.status(response.status).json(response.data);
@@ -57,6 +65,62 @@ async function startServer() {
         details: "Make sure your partner's server is running and the tunnel is live.",
       });
     }
+  }
+
+  // Multi-route fallback authentication proxy to avoid 404 errors with partner's MongoDB backend
+  async function proxyAuthMultiRoute(
+    urls: string[],
+    body: any,
+    res: express.Response,
+    req?: express.Request
+  ) {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (req && req.headers && req.headers.authorization) {
+      headers["Authorization"] = req.headers.authorization as string;
+    }
+
+    let lastError: any = null;
+    const triedPaths: string[] = [];
+
+    for (const url of urls) {
+      triedPaths.push(url);
+      try {
+        console.log(`[AUTH PROXY] Evaluating authentication path: ${url}`);
+        const response = await axios({
+          url,
+          method: "POST",
+          data: body,
+          headers,
+          timeout: 4000,
+          validateStatus: (status) => status !== 404, // Continue looping if it is a 404, otherwise process immediately
+        });
+
+        console.log(`[AUTH PROXY] Successful handshake: Resolved endpoint: ${url} (Status: ${response.status})`);
+        return res.status(response.status).json(response.data);
+      } catch (error: any) {
+        lastError = error;
+        const status = error.response?.status;
+        console.warn(`[AUTH PROXY] Unmatched path: ${url} (Status: ${status || 'OFFLINE/TIMEOUT'}). Error: ${error.message}`);
+        // If the error code is not a 404 (e.g. 400 Validation Error or 401 Unauthorized), it means the route exists but authorization failed.
+        // We should immediately forward this authentic rejection directly to the frontend.
+        if (status && status !== 404) {
+          return res.status(status).json(error.response?.data || { message: error.message });
+        }
+      }
+    }
+
+    // If every single route returned a 404 or the backend is completely offline
+    const code = lastError?.response?.status || 502;
+    console.error(`[AUTH PROXY] All candidate routes returned 404. Check MongoDB router mapping! Tried:`, triedPaths);
+    res.status(code).json({
+      error: "Authentication Endpoint Route Mismatch (404/502)",
+      message: `All automated authentication paths returned 404 on your partner's MongoDB server.`,
+      triedPaths,
+      technicalDetails: "Check your partner's server logs to make sure they are serving one of these endpoints.",
+      canFallbackToDemo: true
+    });
   }
 
   // Specialized proxy helper for GET collection endpoints, returning an empty array [] if offline or missing (404/502)
@@ -83,13 +147,28 @@ async function startServer() {
     }
   }
 
-  // Auth Proxies
+  // Auth Proxies with multi-route solver fallback safety
   app.post("/api/auth/login", (req, res) => {
-    proxyFetch(`${PARTNER_BACKEND_URL}/auth/login`, "POST", req.body, res);
+    const candidates = [
+      `${PARTNER_BACKEND_URL}/auth/login`,
+      `${PARTNER_BACKEND_URL}/api/auth/login`,
+      `${PARTNER_BACKEND_URL}/login`,
+      `${PARTNER_BACKEND_URL}/api/login`
+    ];
+    proxyAuthMultiRoute(candidates, req.body, res, req);
   });
 
   app.post("/api/auth/register", (req, res) => {
-    proxyFetch(`${PARTNER_BACKEND_URL}/auth/register`, "POST", req.body, res);
+    const candidates = [
+      `${PARTNER_BACKEND_URL}/auth/register`,
+      `${PARTNER_BACKEND_URL}/api/auth/register`,
+      `${PARTNER_BACKEND_URL}/register`,
+      `${PARTNER_BACKEND_URL}/api/register`,
+      `${PARTNER_BACKEND_URL}/auth/signup`,
+      `${PARTNER_BACKEND_URL}/signup`,
+      `${PARTNER_BACKEND_URL}/api/signup`
+    ];
+    proxyAuthMultiRoute(candidates, req.body, res, req);
   });
 
   // Shared in-memory databases to ensure instant multi-device sync

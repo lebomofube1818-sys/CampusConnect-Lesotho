@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShoppingBag, Mail, Lock, UserCircle, Store, ArrowRight, Sparkles, Zap, ShieldCheck, Phone, Check, GraduationCap } from 'lucide-react';
+import { ShoppingBag, Mail, Lock, UserCircle, Store, ArrowRight, Sparkles, Zap, ShieldCheck, Phone, Check, GraduationCap, Eye, EyeOff } from 'lucide-react';
 import { auth, db } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
@@ -35,6 +35,8 @@ const Auth: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [countryCode, setCountryCode] = useState('+266');
   const [phone, setPhone] = useState('');
   const [school, setSchool] = useState('');
@@ -80,6 +82,9 @@ const Auth: React.FC = () => {
       const response = await (mode === 'login' ? authApi.login(payload) : authApi.register(payload));
       const data = response.data;
 
+      // Extract token dynamically for standard MongoDB / Custom backends
+      const token = data.token || data.jwt || data.accessToken || data.idToken || data.id_token || null;
+
       // Mapping backend response to store user format
       const user = {
         uid: data.uid || data.id || 'user-' + Date.now(),
@@ -89,7 +94,11 @@ const Auth: React.FC = () => {
         role: data.role || role
       };
       
-      useAuthStore.getState().setUser(user as any);
+      const authState = useAuthStore.getState();
+      authState.setUser(user as any);
+      if (token) {
+        authState.setToken(token);
+      }
       setShowSuccess(true);
       
       setTimeout(() => {
@@ -499,12 +508,19 @@ const Auth: React.FC = () => {
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-brand-primary" size={20} />
                 <input 
                   required
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-2xl bg-slate-50 py-4 pl-12 pr-4 text-sm font-semibold border-2 border-transparent transition-all focus:border-brand-primary focus:bg-white focus:outline-none focus:ring-0"
+                  className="w-full rounded-2xl bg-slate-50 py-4 pl-12 pr-12 text-sm font-semibold border-2 border-transparent transition-all focus:border-brand-primary focus:bg-white focus:outline-none focus:ring-0"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-brand-primary focus:outline-none transition-colors select-none cursor-pointer"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
               </div>
             </div>
 
@@ -521,12 +537,19 @@ const Auth: React.FC = () => {
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-brand-primary" size={20} />
                     <input 
                       required
-                      type="password"
+                      type={showConfirmPassword ? "text" : "password"}
                       placeholder="••••••••"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full rounded-2xl bg-slate-50 py-4 pl-12 pr-4 text-sm font-semibold border-2 border-transparent transition-all focus:border-brand-primary focus:bg-white focus:outline-none focus:ring-0"
+                      className="w-full rounded-2xl bg-slate-50 py-4 pl-12 pr-12 text-sm font-semibold border-2 border-transparent transition-all focus:border-brand-primary focus:bg-white focus:outline-none focus:ring-0"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-brand-primary focus:outline-none transition-colors select-none cursor-pointer"
+                    >
+                      {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
                   </div>
                 </motion.div>
               )}
