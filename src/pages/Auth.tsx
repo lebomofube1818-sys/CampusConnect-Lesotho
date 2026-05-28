@@ -5,6 +5,7 @@ import { auth, db } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { authApi } from '../lib/api';
+import { Logo } from '../components/ui/Logo';
 
 const countryCodes = [
   { code: '+266', name: 'LS', flag: '🇱🇸' },
@@ -184,7 +185,7 @@ const Auth: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-start bg-gradient-to-br from-brand-primary via-emerald-600 to-brand-secondary px-4 pt-24 pb-12 sm:pt-40 font-sans overflow-hidden">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-brand-primary via-emerald-600 to-brand-secondary px-4 py-8 font-sans overflow-hidden">
       {/* Success Modal */}
       <AnimatePresence>
         {showSuccess && (
@@ -313,44 +314,6 @@ const Auth: React.FC = () => {
       <div className="fixed -top-24 -left-24 h-96 w-96 rounded-full bg-white/10 blur-3xl animate-pulse"></div>
       <div className="fixed -bottom-24 -right-24 h-96 w-96 rounded-full bg-black/10 blur-3xl animate-pulse"></div>
 
-      {/* Header section */}
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8 flex flex-col items-center text-center"
-      >
-        <div className="mb-10 flex justify-center" style={{ perspective: 1000 }}>
-          <motion.div
-            animate={{ 
-              y: [0, -15, 0],
-              rotateY: [0, 20, 0, -20, 0],
-              rotateX: [0, -10, 0, 10, 0]
-            }}
-            transition={{ 
-              duration: 5, 
-              repeat: Infinity, 
-              ease: "easeInOut" 
-            }}
-            whileHover={{ 
-              scale: 1.2, 
-              rotateY: 30,
-              transition: { duration: 0.3 }
-            }}
-            className="relative flex items-center justify-center"
-          >
-            <img 
-              src="/logo.png" 
-              alt="Campus Connect" 
-              className="h-48 w-48 object-contain drop-shadow-[0_40px_80px_rgba(34,197,94,0.5)] sm:h-72 sm:w-72"
-            />
-          </motion.div>
-        </div>
-        <h1 className="text-3xl font-black tracking-tight text-white drop-shadow-md sm:text-4xl">
-          CampusConnect
-        </h1>
-        <p className="mt-1 text-[11px] font-black uppercase tracking-[0.4em] text-emerald-50 opacity-90">Lesotho • Student Marketplace</p>
-      </motion.div>
-
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -358,11 +321,17 @@ const Auth: React.FC = () => {
         className="relative w-full max-w-[420px]"
       >
         <div className="rounded-[3rem] bg-white/95 backdrop-blur-xl p-8 shadow-2xl sm:p-10 relative overflow-hidden ring-1 ring-white/50">
-          <div className="mb-8 text-center">
+          <div className="mb-6 flex flex-col items-center text-center">
+            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 p-2 shadow-inner">
+              <Logo className="h-10 w-10" />
+            </div>
             <h2 className="text-2xl font-black text-slate-900">
               {mode === 'login' ? 'Welcome Back' : 'Join the Community'}
             </h2>
-            <p className="mt-1 text-sm font-medium text-slate-500">
+            <p className="mt-1 text-xs font-semibold text-slate-400 uppercase tracking-widest">
+              CampusConnect Lesotho
+            </p>
+            <p className="mt-2 text-sm font-medium text-slate-500">
               {mode === 'login' ? 'Login to your student account' : 'Start buying and selling today'}
             </p>
           </div>
