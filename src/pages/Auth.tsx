@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShoppingBag, Mail, Lock, UserCircle, Store, ArrowRight, Sparkles, Zap, ShieldCheck, Phone, Check, GraduationCap } from 'lucide-react';
+import { ShoppingBag, Mail, Lock, UserCircle, Store, ArrowRight, Sparkles, Zap, ShieldCheck, Phone, Check, GraduationCap, Eye, EyeOff } from 'lucide-react';
 import { auth, db } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
@@ -35,6 +35,8 @@ const Auth: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [countryCode, setCountryCode] = useState('+266');
   const [phone, setPhone] = useState('');
   const [school, setSchool] = useState('');
@@ -69,16 +71,19 @@ const Auth: React.FC = () => {
       const payload = {
         email,
         password,
-        username: displayName, // Added 'name' as a common alternative
-        // displayName: mode === 'register' ? displayName : undefined,
+        name: displayName, // Added 'name' as a common alternative
+        displayName: mode === 'register' ? displayName : undefined,
         role: mode === 'register' ? role : undefined,
         phone: mode === 'register' ? `${countryCode}${phone}` : undefined,
-        // phone_number: mode === 'register' ? `${countryCode}${phone}` : undefined, // Added common alternative
+        phone_number: mode === 'register' ? `${countryCode}${phone}` : undefined, // Added common alternative
         school: (mode === 'register' && role === 'student') ? school : undefined,
       };
-console.log('Auth payload:', payload);
+
       const response = await (mode === 'login' ? authApi.login(payload) : authApi.register(payload));
       const data = response.data;
+
+      // Extract token dynamically for standard MongoDB / Custom backends
+      const token = data.token || data.jwt || data.accessToken || data.idToken || data.id_token || null;
 
       // Mapping backend response to store user format
       const user = {
@@ -89,11 +94,15 @@ console.log('Auth payload:', payload);
         role: data.role || role
       };
       
-      useAuthStore.getState().setUser(user as any);
+      const authState = useAuthStore.getState();
+      authState.setUser(user as any);
+      if (token) {
+        authState.setToken(token);
+      }
       setShowSuccess(true);
       
       setTimeout(() => {
-        navigate('/dashboard');
+        navigate(user.role === 'student' ? '/create-request' : '/dashboard');
       }, 1500);
     } catch (err: any) {
       console.error('Auth error detailed:', err);
@@ -149,9 +158,29 @@ console.log('Auth payload:', payload);
       setLoading(false);
       setShowSuccess(true);
       setTimeout(() => {
-        navigate('/dashboard');
+        navigate('/create-request');
       }, 1500);
     }, 1000);
+  };
+
+  const bypassWithMockUser = (selectedRole: 'student' | 'vendor') => {
+    setLoading(true);
+    setTimeout(() => {
+      const mockUser = {
+        uid: `demo-${selectedRole}-${Date.now()}`,
+        email: `demo-${selectedRole}@campusconnect.edu`,
+        displayName: selectedRole === 'student' ? 'Demo Student' : 'Demo Vendor',
+        photoURL: null,
+        role: selectedRole,
+        school: 'National University of Lesotho (NUL)',
+      };
+      useAuthStore.getState().setUser(mockUser as any);
+      setLoading(false);
+      setShowSuccess(true);
+      setTimeout(() => {
+        navigate(selectedRole === 'student' ? '/create-request' : '/dashboard');
+      }, 1500);
+    }, 800);
   };
 
   return (
@@ -163,29 +192,119 @@ console.log('Auth payload:', payload);
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4"
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/40 backdrop-blur-xl p-4"
           >
             <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              className="w-full max-w-sm rounded-[3rem] bg-white p-10 text-center shadow-2xl"
+              initial={{ scale: 0.85, opacity: 0, rotateY: -15, y: 30 }}
+              animate={{ scale: 1, opacity: 1, rotateY: 0, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: -20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 180 }}
+              className="w-full max-w-[440px] rounded-[3.5rem] bg-white/90 backdrop-blur-2xl p-10 text-center shadow-[0_50px_100px_-20px_rgba(15,23,42,0.18)] border border-slate-100 relative overflow-hidden"
+              style={{ perspective: 1000, transformStyle: 'preserve-3d' }}
             >
-              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-brand-primary">
-                <Check size={40} strokeWidth={3} />
+              {/* Subtly shimmering background ambient lights inside the card */}
+              <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-brand-primary/10 blur-3xl" />
+              <div className="absolute -left-12 -bottom-12 h-40 w-40 rounded-full bg-brand-secondary/10 blur-3xl" />
+
+              {/* Premium 3D Animation block */}
+              <div className="relative mx-auto mb-8 flex h-40 w-40 items-center justify-center select-none" style={{ perspective: 1000 }}>
+                {/* Orbit path 1: Large light ring */}
+                <motion.div
+                  className="absolute inset-2 rounded-full border border-dashed border-brand-primary/30"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+                />
+                {/* Orbit path 2: Medium quick ring rotating opposite */}
+                <motion.div
+                  className="absolute inset-6 rounded-full border border-double border-brand-secondary/40"
+                  animate={{ rotate: -360 }}
+                  transition={{ duration: 7, repeat: Infinity, ease: "linear" }}
+                />
+                
+                {/* Beautiful Center coin rotating in 3D */}
+                <motion.div
+                  className="absolute h-22 w-22 rounded-full bg-gradient-to-tr from-brand-primary via-emerald-400 to-brand-secondary p-[3px] shadow-[0_20px_40px_rgba(34,197,94,0.35)] flex items-center justify-center"
+                  style={{ transformStyle: 'preserve-3d' }}
+                  animate={{ 
+                    rotateY: [0, 180, 360],
+                    rotateX: [0, 25, 0, -25, 0],
+                    y: [0, -6, 0]
+                  }}
+                  transition={{ 
+                    duration: 4, 
+                    repeat: Infinity, 
+                    ease: "easeInOut" 
+                  }}
+                >
+                  {/* Front/Back of the spinning badge */}
+                  <div className="h-full w-full rounded-full bg-slate-900 flex flex-col items-center justify-center p-1" style={{ transform: 'translateZ(12px)', backfaceVisibility: 'hidden' }}>
+                    <Check size={32} className="text-white drop-shadow-[0_2px_8px_rgba(34,197,94,0.8)]" strokeWidth={4} />
+                  </div>
+                </motion.div>
+
+                {/* Orbiting particle 1 */}
+                <motion.div
+                  className="absolute h-3 w-3 rounded-full bg-emerald-500 shadow-[0_0_12px_#10b981]"
+                  animate={{
+                    x: [0, 60, 0, -60, 0],
+                    y: [-60, 0, 60, 0, -60],
+                    scale: [1, 1.3, 0.8, 1.3, 1]
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                />
+
+                {/* Orbiting particle 2 */}
+                <motion.div
+                  className="absolute h-2 w-2 rounded-full bg-brand-secondary shadow-[0_0_8px_#22c55e]"
+                  animate={{
+                    x: [0, -48, 0, 48, 0],
+                    y: [48, 0, -48, 0, 48],
+                    scale: [0.8, 1.2, 0.7, 1.2, 0.8]
+                  }}
+                  transition={{
+                    duration: 2.2,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                />
               </div>
-              <h2 className="text-3xl font-black text-slate-900">Success!</h2>
-              <p className="mt-4 font-bold text-slate-500">
-                {mode === 'login' ? 'Welcome back! Redirecting to your dashboard...' : 'Your account has been created successfully! Redirecting...'}
-              </p>
-              <div className="mt-8 flex justify-center">
-                <div className="h-1.5 w-32 overflow-hidden rounded-full bg-slate-100">
+
+              {/* Title & description matching user's selected role */}
+              <div style={{ transform: 'translateZ(20px)' }}>
+                <motion.h2 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 }}
+                  className="text-3xl font-black tracking-tight text-slate-900"
+                >
+                  Access Granted
+                </motion.h2>
+                
+                <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.25 }}
+                  className="mt-3 text-sm font-bold text-slate-500 max-w-xs mx-auto leading-relaxed"
+                >
+                  {mode === 'login' ? 'Securing safe handshake with your campus dashboard...' : 'Account successfully synthesized. Initializing workspace...'}
+                </motion.p>
+              </div>
+
+              {/* Interactive progressive flow bar */}
+              <div className="mt-8 flex flex-col items-center justify-center gap-2" style={{ transform: 'translateZ(10px)' }}>
+                <div className="h-1.5 w-48 overflow-hidden rounded-full bg-slate-100 p-[1px] border border-slate-100">
                   <motion.div 
                     initial={{ width: 0 }}
                     animate={{ width: "100%" }}
-                    transition={{ duration: 1.5 }}
-                    className="h-full bg-brand-primary"
+                    transition={{ duration: 1.5, ease: "easeInOut" }}
+                    className="h-full rounded-full bg-gradient-to-r from-brand-primary to-brand-secondary"
                   />
                 </div>
+                <span className="text-[10px] font-black uppercase tracking-[0.25em] text-emerald-600/80 animate-pulse mt-1">Syncing Session...</span>
               </div>
             </motion.div>
           </motion.div>
@@ -389,12 +508,19 @@ console.log('Auth payload:', payload);
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-brand-primary" size={20} />
                 <input 
                   required
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-2xl bg-slate-50 py-4 pl-12 pr-4 text-sm font-semibold border-2 border-transparent transition-all focus:border-brand-primary focus:bg-white focus:outline-none focus:ring-0"
+                  className="w-full rounded-2xl bg-slate-50 py-4 pl-12 pr-12 text-sm font-semibold border-2 border-transparent transition-all focus:border-brand-primary focus:bg-white focus:outline-none focus:ring-0"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-brand-primary focus:outline-none transition-colors select-none cursor-pointer"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
               </div>
             </div>
 
@@ -411,12 +537,19 @@ console.log('Auth payload:', payload);
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-brand-primary" size={20} />
                     <input 
                       required
-                      type="password"
+                      type={showConfirmPassword ? "text" : "password"}
                       placeholder="••••••••"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full rounded-2xl bg-slate-50 py-4 pl-12 pr-4 text-sm font-semibold border-2 border-transparent transition-all focus:border-brand-primary focus:bg-white focus:outline-none focus:ring-0"
+                      className="w-full rounded-2xl bg-slate-50 py-4 pl-12 pr-12 text-sm font-semibold border-2 border-transparent transition-all focus:border-brand-primary focus:bg-white focus:outline-none focus:ring-0"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-brand-primary focus:outline-none transition-colors select-none cursor-pointer"
+                    >
+                      {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
                   </div>
                 </motion.div>
               )}
@@ -459,13 +592,18 @@ console.log('Auth payload:', payload);
             </AnimatePresence>
 
             {error && (
-              <motion.p 
-                initial={{ opacity: 0 }} 
-                animate={{ opacity: 1 }} 
-                className="text-[10px] font-bold text-red-500 text-center uppercase tracking-wider"
-              >
-                {error}
-              </motion.p>
+              <div className="space-y-2">
+                <motion.p 
+                  initial={{ opacity: 0 }} 
+                  animate={{ opacity: 1 }} 
+                  className="text-xs font-bold text-red-500 text-center"
+                >
+                  {error}
+                </motion.p>
+                <p className="text-[10px] font-medium text-slate-400 text-center select-none leading-relaxed">
+                  Tip: If your partner's server is down, use the <strong className="text-slate-600">Sandbox & Development</strong> quick options below to test the applet instantly!
+                </p>
+              </div>
             )}
 
             <div className="pt-6 space-y-4">
@@ -494,14 +632,33 @@ console.log('Auth payload:', payload);
           {/* Social login divider */}
           <div className="mt-8 flex items-center gap-4">
             <div className="h-px flex-1 bg-slate-100"></div>
-            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Trust</span>
+            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Sandbox & Development</span>
             <div className="h-px flex-1 bg-slate-100"></div>
+          </div>
+
+          <div className="mt-6 grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => bypassWithMockUser('student')}
+              className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-emerald-100 bg-emerald-50/20 p-4 font-bold text-slate-700 hover:bg-emerald-50 transition-all active:scale-[0.97]"
+            >
+              <UserCircle size={22} className="text-brand-primary" />
+              <span className="text-[10px] font-black tracking-wider uppercase text-slate-900">Demo Student</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => bypassWithMockUser('vendor')}
+              className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-indigo-100 bg-indigo-50/20 p-4 font-bold text-slate-700 hover:bg-indigo-50 transition-all active:scale-[0.97]"
+            >
+              <Store size={22} className="text-indigo-600" strokeWidth={2} />
+              <span className="text-[10px] font-black tracking-wider uppercase text-slate-900">Demo Vendor</span>
+            </button>
           </div>
 
           <button 
             type="button"
             onClick={signInWithGoogle}
-            className="mt-6 flex w-full items-center justify-center gap-3 rounded-2xl bg-white py-4 text-xs font-black text-slate-700 ring-1 ring-slate-100 shadow-sm transition-all hover:bg-slate-50 active:scale-95"
+            className="mt-4 flex w-full items-center justify-center gap-3 rounded-2xl bg-white py-4 text-xs font-black text-slate-700 ring-1 ring-slate-100 shadow-sm transition-all hover:bg-slate-50 active:scale-95"
           >
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="h-5 w-5" alt="Google" />
             Continue with Google

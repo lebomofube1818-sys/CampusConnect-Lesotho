@@ -95,9 +95,9 @@ const Students: React.FC = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSelectedStudent(null)}
-              className="fixed inset-0 z-[100] bg-slate-950/40 backdrop-blur-md"
+              className="fixed inset-0 z-100 bg-slate-950/40 backdrop-blur-md"
             />
-            <div className="fixed inset-0 z-[101] flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-101 flex items-center justify-center p-4">
               <motion.div
                 layoutId={`student-${selectedStudent.id}`}
                 initial={{ scale: 0.9, opacity: 0, rotateX: -15, y: 30 }}
@@ -228,7 +228,7 @@ const Students: React.FC = () => {
                   rotateY: -4,
                   transition: { type: 'spring', stiffness: 300, damping: 20 }
                 }}
-                className="group relative flex flex-col items-center overflow-hidden rounded-[1.5rem] sm:rounded-[2.5rem] bg-white p-4 sm:p-10 text-center shadow-xl shadow-slate-100 transition-all hover:shadow-2xl hover:shadow-slate-200/60"
+                className="group relative flex flex-col items-center overflow-hidden rounded-3xl sm:rounded-[2.5rem] bg-white p-4 sm:p-10 text-center shadow-xl shadow-slate-100 transition-all hover:shadow-2xl hover:shadow-slate-200/60"
                 style={{ perspective: 1000, transformStyle: 'preserve-3d' }}
               >
                 <div className="relative mb-4 sm:mb-8 flex h-16 w-16 sm:h-28 sm:w-28 items-center justify-center rounded-full bg-slate-50 shadow-inner ring-1 ring-slate-100 transition-transform duration-500 group-hover:scale-110" style={{ transform: 'translateZ(20px)' }}>
@@ -238,7 +238,7 @@ const Students: React.FC = () => {
                 <div className="flex-1 w-full" style={{ transform: 'translateZ(30px)' }}>
                   <div className="mb-1 flex items-center justify-center gap-2">
                     <h3 className="text-sm sm:text-2xl font-black tracking-tight text-slate-900">{student.name}</h3>
-                    {student.verified && <ShieldCheck size={14} className="text-brand-primary sm:size-[18px]" />}
+                    {student.verified && <ShieldCheck size={14} className="text-brand-primary sm:size-4.5" />}
                   </div>
                   <p className="mb-3 sm:mb-6 text-[9px] sm:text-sm font-bold text-slate-400 uppercase tracking-widest">{student.major}</p>
                   

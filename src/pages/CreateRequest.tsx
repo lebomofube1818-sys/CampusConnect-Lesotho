@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { 
   ShoppingBag, 
@@ -11,7 +11,8 @@ import {
   Info
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { updatesApi } from '../lib/api';
+import { useAuthStore } from '../store/authStore';
+import { dataApi } from '../lib/api';
 
 const CATEGORIES = [
   'Electronics',
@@ -23,53 +24,44 @@ const CATEGORIES = [
   'Other'
 ];
 
-const URGENCY_LEVELS = [
-  { id: 'low', label: 'Casual', color: 'bg-blue-50 text-blue-600 border-blue-100' },
-  { id: 'medium', label: 'Needed Soon', color: 'bg-amber-50 text-amber-600 border-amber-100' },
-  { id: 'high', label: 'Urgent', color: 'bg-red-50 text-red-600 border-red-100' }
-];
-
 const CreateRequest: React.FC = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [budget, setBudget] = useState('');
-  const [urgency, setUrgency] = useState('medium');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
 
+  const { user } = useAuthStore();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
     
     try {
-      // Create the request object
-      const newRequest = {
+      await dataApi.createRequest({
         title,
         description,
         category,
         budget,
-        urgency,
         timestamp: new Date().toISOString(),
-      };
-
-      // Try to push update to partner's backend
-      await updatesApi.pushUpdate({
-        type: 'NEW_REQUEST',
-        data: newRequest
       });
 
-      setLoading(false);
       setSuccess(true);
-      setTimeout(() => navigate('/'), 2000);
-    } catch (err) {
+      setTimeout(() => navigate('/dashboard'), 1500);
+    } catch (err: any) {
       console.error('Submit error:', err);
-      // Even if call fails, we show success on client for now to keep flow going
+      const errorMessage = err.response?.data?.detail || err.response?.data?.message || err.message || 'Failed to post request';
+      setError(errorMessage);
+    } finally {
       setLoading(false);
-      setSuccess(true);
-      setTimeout(() => navigate('/'), 2000);
     }
   };
 
@@ -172,28 +164,6 @@ const CreateRequest: React.FC = () => {
 
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-slate-400 ml-1">
-                <AlertCircle size={14} className="text-brand-primary" /> Urgency
-              </label>
-              <div className="grid grid-cols-3 gap-3">
-                {URGENCY_LEVELS.map(level => (
-                  <button
-                    key={level.id}
-                    type="button"
-                    onClick={() => setUrgency(level.id)}
-                    className={`rounded-2xl border-2 py-3 text-xs font-black uppercase tracking-widest transition-all ${
-                      urgency === level.id 
-                        ? `${level.color} shadow-sm ring-2 ring-offset-2 ring-brand-primary/20` 
-                        : 'border-slate-50 bg-slate-50 text-slate-400'
-                    }`}
-                  >
-                    {level.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-slate-400 ml-1">
                 <Info size={14} className="text-brand-primary" /> Additional Details
               </label>
               <textarea 
@@ -207,10 +177,23 @@ const CreateRequest: React.FC = () => {
           </div>
         </div>
 
+        {error && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="rounded-2xl bg-red-50 p-4 border border-red-100"
+          >
+            <div className="flex items-center gap-3">
+              <AlertCircle className="text-red-500 shrink-0" size={20} />
+              <p className="text-sm font-bold text-red-600">{error}</p>
+            </div>
+          </motion.div>
+        )}
+
         <div className="flex flex-col gap-4 sm:flex-row">
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate(user ? '/dashboard' : '/')}
             className="flex-1 rounded-3xl bg-slate-100 py-5 text-base font-black text-slate-600 transition-all hover:bg-slate-200 active:scale-95"
           >
             Cancel
@@ -218,7 +201,7 @@ const CreateRequest: React.FC = () => {
           <button
             disabled={loading || !title}
             type="submit"
-            className="group flex-[2] flex items-center justify-center gap-3 rounded-3xl bg-brand-primary py-5 text-base font-black text-white shadow-2xl shadow-green-900/10 transition-all hover:scale-[1.02] hover:bg-emerald-600 active:scale-95 disabled:opacity-50"
+            className="group flex-2 flex items-center justify-center gap-3 rounded-3xl bg-brand-primary py-5 text-base font-black text-white shadow-2xl shadow-green-900/10 transition-all hover:scale-[1.02] hover:bg-emerald-600 active:scale-95 disabled:opacity-50"
           >
             {loading ? 'Posting...' : 'Confirm Post'}
             <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
