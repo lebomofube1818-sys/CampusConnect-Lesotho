@@ -31,9 +31,10 @@ export const authApi = {
 
 export const dataApi = {
   getRequests: () => api.get('/requests'),
+  createRequest: (data: any) => api.post('/requests', data),
   getStudents: () => api.get('/students'),
   getCategories: () => api.get('/categories'),
-  getVendors: () => api.get('/vendors'),
+  getVendors: () => api.get('/vendors/'),
   sync: (data?: any) => data ? api.post('/sync', data) : api.get('/sync'),
 };
 
