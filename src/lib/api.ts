@@ -36,7 +36,10 @@ export const userApi = {
 };
 
 export const dataApi = {
-  getRequests: () => api.get('/requests/me'),
+  getMyRequests: () => api.get('/requests/me'),
+
+  getRequests: () => 
+    api.get('/requests'),
 
   createRequest: (data: any) =>
     api.post('/requests', data),
@@ -52,6 +55,10 @@ export const dataApi = {
   getCategories: () => api.get('/categories'),
 
   getVendors: () => api.get('/vendors/'),
+
+  // Proposals
+  //getProposals: () => api.get('/proposals'),
+  createProposal: (data: any) => api.post('/offers', data),
 };
 
 export const updatesApi = {

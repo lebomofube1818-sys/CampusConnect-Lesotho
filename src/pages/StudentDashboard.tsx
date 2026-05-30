@@ -291,7 +291,7 @@ const StudentDashboard: React.FC = () => {
 
  const loadStudentRequests = async () => {
   try {
-    const response = await dataApi.getRequests();
+    const response = await dataApi.getMyRequests();
 
     // Normalize backend response
     const requestsData =
